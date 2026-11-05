@@ -1,0 +1,19 @@
+{
+  "name": "auto-repair-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Auto repair shop website with appointment requests, contact inquiries and an admin dashboard.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
+    "og-image": "node scripts/build-og-image.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
