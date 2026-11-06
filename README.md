@@ -55,6 +55,20 @@ Compress images to WebP or a high-quality JPEG of about 300 KB each.
 
 After setting your name, regenerate the social share image with `npm i -D playwright && npm run og-image`.
 
+## Animation
+
+Motion is a progressive enhancement built on [Motion](https://motion.dev) (the successor to Framer Motion), using its framework-free API, because the site is server-rendered without React. Only the functions the site uses are bundled into `public/js/vendor/motion.js` (about 6 KB gzipped). Rebuild it with `npm run build:motion` after upgrading the `motion` package.
+
+`public/js/motion.js` adds:
+- staggered scroll reveals
+- a slow settle on the hero photo
+- spring transitions between booking steps
+- staggered time slots
+- a follow-through on the confirmation screens
+- lightbox transitions
+
+It animates only transform and opacity. It only hides content that starts below the fold, does nothing for visitors who prefer reduced motion, and the site works fully if the script never loads. `public/js/main.js` handles all behaviour and only fires `site:*` events for the motion layer to respond to.
+
 ## How booking works
 
 1. The customer picks a make and model, enters the year, chooses a service and date, and selects one of the **available** times (loaded from `/api/availability`).
@@ -95,6 +109,7 @@ src/db.js             SQLite schema and migrations
 src/auth.js           Admin password and sessions
 src/validation.js     Server-side validation
 src/views/            Server-rendered HTML
-public/               CSS, JavaScript, images
+public/               CSS, JavaScript (main.js behaviour, motion.js animation), images
+src/client/           Entry file for the Motion bundle
 test/                 API, booking and admin tests (node --test)
 ```

@@ -11,10 +11,15 @@
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
-    "og-image": "node scripts/build-og-image.js"
+    "og-image": "node scripts/build-og-image.js",
+    "build:motion": "esbuild src/client/motion-entry.js --bundle --minify --format=iife --global-name=Motion --target=es2019 --legal-comments=eof --banner:js=\"/*! Motion (https://motion.dev), MIT License. Subset built by npm run build:motion */\" --outfile=public/js/vendor/motion.js"
   },
   "dependencies": {
     "express": "^4.21.2",
     "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12",
+    "motion": "^12.43.0"
   }
 }
