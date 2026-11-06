@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#000000"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<title>Pump Desk</title>
+<link rel="stylesheet" href="app.css"/>
+</head>
+<body>
+<div id="offline" class="banner error hidden"></div>
+<header id="nav" class="nav">
+  <button id="avatar" class="avatar" aria-label="Account">R</button>
+  <div class="nav-title">Grok Bot <span class="chev">›</span></div>
+  <button id="searchBtn" class="icon-btn" aria-label="Search">⌕</button>
+  <button id="bellBtn" class="icon-btn" aria-label="Notifications"><span class="bell">🔔</span><span id="bellDot" class="dot hidden"></span></button>
+</header>
+
+<main id="app">
+  <!-- HOME -->
+  <section id="tab-home" class="tab active">
+    <div class="balance-row">
+      <div id="balance" class="balance">$0.00</div>
+      <span id="paperBadge" class="pill orange">PAPER</span>
+    </div>
+    <div class="sub-row">
+      <span id="todayPct" class="secondary">+0.00%</span>
+      <span id="mult" class="pill green">1.00×</span>
+    </div>
+    <canvas id="homeChart" height="180"></canvas>
+    <div class="ranges" id="ranges">
+      <button data-r="LIVE" class="active">LIVE</button>
+      <button data-r="1H">1H</button>
+      <button data-r="4H">4H</button>
+      <button data-r="1D">1D</button>
+      <button data-r="1W">1W</button>
+      <button data-r="ALL">ALL</button>
+    </div>
+    <h2 class="section">Agents · <span id="agentRunning">5 running</span></h2>
+    <div id="agentCarousel" class="carousel"></div>
+    <div class="section-row">
+      <h2 class="section">Activity</h2>
+      <button id="seeAll" class="link">See all</button>
+    </div>
+    <div id="homeActivity" class="activity-list"></div>
+  </section>
+
+  <!-- AGENTS -->
+  <section id="tab-agents" class="tab">
+    <div id="agentsList"></div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section id="tab-activity" class="tab">
+    <div id="activityList" class="activity-list"></div>
+    <div id="activityEmpty" class="empty hidden">Nothing yet tonight</div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section id="tab-account" class="tab">
+    <h2 class="section">Mode</h2>
+    <div class="row">
+      <button id="modePaper" class="seg">PAPER</button>
+      <button id="modeLive" class="seg">LIVE</button>
+    </div>
+    <div class="card">
+      <div class="row between">
+        <span>Stack</span>
+        <span id="acctStack">$200</span>
+      </div>
+      <a id="profileLink" class="row between" href="https://pump.fun/profile/RuneLavaSeal" target="_blank" rel="noopener">
+        <span>Your Pump.fun profile</span>
+        <span class="secondary">RuneLavaSeal ›</span>
+      </a>
+      <button id="inviteBtn" class="row between">
+        <span>Invite a friend</span>
+        <span class="secondary">pump.fun ›</span>
+      </button>
+      <div class="row between">
+        <span>Telegram</span>
+        <span id="tgStatus" class="secondary">—</span>
+      </div>
+      <button id="testPush" class="btn">Send test push</button>
+    </div>
+    <h2 class="section">Settings</h2>
+    <div id="settingsBox" class="card settings"></div>
+  </section>
+
+  <!-- COIN / AUDIT overlays -->
+  <section id="screen-coin" class="tab overlay hidden">
+    <button class="back" id="coinBack">‹ Back</button>
+    <div id="coinHeader"></div>
+    <canvas id="coinChart" height="220"></canvas>
+    <div id="coinStats" class="stats"></div>
+    <div id="coinPos"></div>
+    <a id="coinBtn" class="btn primary" href="#" target="_blank" rel="noopener">Buy on Pump.fun</a>
+  </section>
+
+  <section id="screen-audit" class="tab overlay hidden">
+    <button class="back" id="auditBack">‹ Back</button>
+    <div id="auditTitle"></div>
+    <div id="auditDiscs" class="discs"></div>
+    <div id="auditLayers"></div>
+    <a id="auditBtn" class="btn primary" href="#" target="_blank" rel="noopener">Open on Pump.fun</a>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button data-tab="home" class="active">Home</button>
+  <button data-tab="agents">Agents</button>
+  <button data-tab="activity">Activity</button>
+  <button data-tab="account">Account</button>
+</nav>
+
+<script src="chart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
