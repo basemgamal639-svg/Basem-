@@ -51,6 +51,7 @@ function servicesSection() {
     .map(
       (s) => `<li class="svc-row" data-svc="${s.slug}">
         <span class="svc-icon">${icon(s.icon)}</span>
+        ${s.image ? `<a class="svc-thumb" href="/services/${s.slug}" tabindex="-1" aria-hidden="true">${photo({ ...s.image, alt: '' }, '', { sizes: '120px' })}</a>` : ''}
         <div class="svc-body">
           <h3><a href="/services/${s.slug}">${esc(s.name)}</a></h3>
           <p>${esc(s.short)}</p>
@@ -279,7 +280,7 @@ function gallerySection() {
     ? items
         .map(
           (g, i) => `<li class="g-item"><button type="button" class="g-btn" data-lightbox="${i}" aria-label="View larger: ${esc(g.alt)}">
-            <img src="${esc(g.src)}" alt="${esc(g.alt)}" loading="lazy" decoding="async">
+            ${photo(g, '', { sizes: i % 6 === 0 ? '(max-width: 720px) 100vw, 66vw' : '(max-width: 720px) 50vw, 33vw' })}
             ${g.caption ? `<span class="g-cap">${esc(g.caption)}</span>` : ''}
           </button></li>`
         )
@@ -291,7 +292,7 @@ function gallerySection() {
   <div class="wrap">
     <div class="section-head split">
       <div>${label('Gallery')}<h2 id="gallery-title">Inside the workshop.</h2></div>
-      <p class="lead">${items.length ? 'A look at the work and the equipment behind it.' : 'Real photography of your team and workshop goes here. Add images in config/business.js.'}</p>
+      <p class="lead">${items.length ? 'Diagnostics, repairs and maintenance, carried out with care and the right equipment.' : 'Real photography of your team and workshop goes here. Add images in config/business.js.'}</p>
     </div>
     <ul class="gallery${items.length ? '' : ' gallery-ph'}">${grid}</ul>
   </div>

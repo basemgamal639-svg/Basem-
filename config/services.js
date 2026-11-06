@@ -1,14 +1,16 @@
 /**
  * SERVICES — each entry appears in the services index on the home page and gets its own page
  * at /services/<slug>. `icon` must match an id in src/icons.js.
- * `image` is optional: { src: '/images/photos/brakes.jpg', alt: '...' }.
+ * `image` starts as a stock photo from config/photos.js. Replace it with your own:
+ *   image: { src: '/images/photos/brakes.jpg', alt: '...', width: 1000, height: 1250 }  (4:5 portrait)
  */
-module.exports = [
+const stock = require('./photos').services;
+
+const services = [
   {
     slug: 'engine-diagnostics',
     name: 'Engine Diagnostics',
     icon: 'engine',
-    image: null,
     short: 'Warning light on? We read the codes, test the system and find the actual cause before recommending any repair.',
     intro:
       'A fault code tells us where to look, not what to replace. We combine scan-tool data with hands-on testing so you pay for the repair the car actually needs.',
@@ -19,7 +21,6 @@ module.exports = [
     slug: 'brake-repair',
     name: 'Brake Repair & Replacement',
     icon: 'brake',
-    image: null,
     short: 'Pads, discs, calipers and fluid measured against spec, with a clear view of what needs doing now and what can wait.',
     intro:
       'We measure pad thickness and disc wear, check the hydraulics and fluid condition, and show you the readings so the recommendation is easy to understand.',
@@ -30,7 +31,6 @@ module.exports = [
     slug: 'oil-change-maintenance',
     name: 'Oil Changes & Maintenance',
     icon: 'oil',
-    image: null,
     short: 'Manufacturer-schedule servicing with the correct oil specification, filters and a full vehicle check.',
     intro:
       'Scheduled maintenance is the cheapest way to avoid expensive failures. We follow your manufacturer’s service schedule and oil specification, and note anything that will need attention soon.',
@@ -41,7 +41,6 @@ module.exports = [
     slug: 'transmission-services',
     name: 'Transmission Services',
     icon: 'gear',
-    image: null,
     short: 'Diagnosis and servicing for manual and automatic gearboxes, from fluid service to fault finding.',
     intro:
       'Transmission problems rarely improve on their own. Early diagnosis can be the difference between a fluid service and a major repair.',
@@ -52,7 +51,6 @@ module.exports = [
     slug: 'tires-wheel-alignment',
     name: 'Tire Services & Wheel Alignment',
     icon: 'tire',
-    image: null,
     short: 'Fitting, balancing, rotation and alignment for even wear, straight tracking and a quieter ride.',
     intro:
       'Correctly fitted, balanced and aligned tires last longer, grip better and make the car more pleasant to drive.',
@@ -63,7 +61,6 @@ module.exports = [
     slug: 'suspension-steering',
     name: 'Suspension & Steering',
     icon: 'suspension',
-    image: null,
     short: 'Shocks, struts, bushes and steering joints inspected and replaced to restore stability and control.',
     intro:
       'Worn suspension affects braking distance, tire wear and how the car feels on the road. We inspect every joint and component and replace only what is worn.',
@@ -74,7 +71,6 @@ module.exports = [
     slug: 'battery-electrical',
     name: 'Battery & Electrical Systems',
     icon: 'battery',
-    image: null,
     short: 'Battery, charging and starting tests, plus fault finding on lights, sensors and wiring.',
     intro:
       'Modern cars depend on stable voltage. We test the battery, alternator and starter, and trace electrical faults back to their source.',
@@ -85,7 +81,6 @@ module.exports = [
     slug: 'air-conditioning-heating',
     name: 'Air Conditioning & Heating',
     icon: 'ac',
-    image: null,
     short: 'Performance checks, leak detection, recharging and heater repairs for a comfortable cabin all year.',
     intro:
       'If the air conditioning blows warm there is usually a reason. We find the cause, whether it is a leak, a component or a control fault, instead of only topping it up.',
@@ -96,7 +91,6 @@ module.exports = [
     slug: 'pre-purchase-inspection',
     name: 'Pre-Purchase Vehicle Inspection',
     icon: 'clipboard',
-    image: null,
     short: 'An independent check of a used car before you buy, with a written report you can use to decide or negotiate.',
     intro:
       'A used car can look perfect and still hide expensive problems. Our inspection gives you an independent view of its condition before you commit.',
@@ -104,3 +98,8 @@ module.exports = [
     signs: ['Buying a used car privately or from a dealer', 'Checking a car before a long trip', 'Want an independent second opinion'],
   },
 ];
+
+// Use the stock photo for any service without its own image.
+for (const s of services) if (s.image === undefined) s.image = stock[s.slug] || null;
+
+module.exports = services;

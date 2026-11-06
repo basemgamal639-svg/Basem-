@@ -40,14 +40,16 @@ Everything business-specific lives in `config/`. The admin dashboard shows a **S
 
 ### Photography
 
-The site is designed around large photos. Until real photos are added, it shows technical line drawings (a car side view, a brake assembly, a gauge) so the pages still look finished.
+The site ships with a curated set of **stock photos** (Unsplash License: free for commercial use, no attribution required), so it looks finished from day one. They cover the hero, the About section, every service and the gallery. Sources are listed in `public/images/photos/CREDITS.md`, and responsive sizes are served as WebP with `srcset`.
 
-Put your photos in `public/images/photos/`, then reference them in `config/business.js` under `photos.hero`, `photos.about`, `photos.aboutDetail` and `gallery`, and in each service's `image` in `config/services.js`. Recommended sizes:
+Photos of **your own** workshop, team and real jobs will always build more trust than stock, and the gallery should show your own work. While any stock photo is in use, the admin **Setup** list reminds you to replace it.
 
-- Hero: 2400×1350, landscape.
-- About: 4:5 portrait.
-- Services: 4:5.
-- Gallery: any orientation. Every fifth image is shown large.
+To replace a photo, put your file in `public/images/photos/`, then set it in `config/business.js` (`photos.hero`, `photos.about`, `photos.aboutDetail`, `gallery`) or as a service's `image` in `config/services.js`. Include `width` and `height` to avoid layout shift. Recommended sizes:
+
+- Hero: 2400×1350, landscape. Keep the left side darker, because the headline sits there.
+- About: 4:5 portrait. Detail image: square.
+- Services: 4:5 portrait.
+- Gallery: any orientation, in groups of six (one large and two stacked, then three across). Only use before-and-after pairs from real jobs.
 
 Compress images to WebP or a high-quality JPEG of about 300 KB each.
 
@@ -86,7 +88,7 @@ Use any Node host with a **persistent disk** (Render, Railway, Fly.io, a VPS). S
 
 ```
 server.js             Pages, public APIs (availability, booking, contact), admin APIs
-config/               business.js, services.js, faq.js, vehicles.js
+config/               business.js, services.js, faq.js, vehicles.js, photos.js (stock photo set)
 src/schedule.js       Slot generation, availability, confirmed-slot capacity
 src/notify.js         Email alerts (nodemailer, optional)
 src/db.js             SQLite schema and migrations
