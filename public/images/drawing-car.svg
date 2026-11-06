@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 640" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- construction grid -->
+  <g stroke="#ffffff" stroke-opacity="0.06" stroke-width="1">
+    <path d="M0 520H1600M0 205H1600M370 60V600M1250 60V600M810 60V600"/>
+  </g>
+  <!-- body -->
+  <g stroke="#f2efe9" stroke-opacity="0.78" stroke-width="1.6">
+    <path d="M215 470C200 440 200 400 212 382C230 350 260 336 300 330L470 300C540 250 600 222 660 214C760 202 860 200 930 208C980 214 1020 240 1080 296C1150 312 1240 326 1330 342C1385 352 1412 368 1424 392C1430 420 1428 450 1418 470L1338 470A88 88 0 0 0 1162 470L458 470A88 88 0 0 0 282 470Z"/>
+    <path d="M500 300C560 258 610 236 665 228C760 218 860 216 925 222C965 226 1000 250 1040 296Z"/>
+  </g>
+  <g stroke="#f2efe9" stroke-opacity="0.4" stroke-width="1.2">
+    <path d="M800 220V300M795 300L790 458M1050 302L1040 452M560 300L556 458"/>
+    <path d="M262 362C600 348 1000 350 1402 374"/>
+    <path d="M300 430H458M1162 432H1338M560 444H1040"/>
+    <path d="M690 330h40M940 334h40"/>
+    <path d="M1040 300l24-15 18 4-7 15z"/>
+    <path d="M1330 350L1405 372L1396 386L1336 368Z"/>
+    <path d="M1360 420h56M1372 436h44"/>
+  </g>
+  <path d="M212 382L262 372L258 392L214 398Z" stroke="#c8102e" stroke-width="1.6"/>
+  <!-- wheels -->
+  <g stroke="#f2efe9" stroke-width="1.5">
+    <g stroke-opacity="0.75"><circle cx="370" cy="460" r="74"/><circle cx="1250" cy="460" r="74"/></g>
+    <g stroke-opacity="0.45"><circle cx="370" cy="460" r="52"/><circle cx="1250" cy="460" r="52"/><circle cx="370" cy="460" r="12"/><circle cx="1250" cy="460" r="12"/></g>
+    <g stroke-opacity="0.3">
+      <path d="M370 408v40M370 472v40M318 460h40M382 460h40M333 423l29 29M378 468l29 29M407 423l-29 29M362 468l-29 29"/>
+      <path d="M1250 408v40M1250 472v40M1198 460h40M1262 460h40M1213 423l29 29M1258 468l29 29M1287 423l-29 29M1242 468l-29 29"/>
+    </g>
+  </g>
+  <path d="M1278 412a52 52 0 0 1 20 26" stroke="#c8102e" stroke-width="5"/>
+  <path d="M398 412a52 52 0 0 1 20 26" stroke="#c8102e" stroke-width="5"/>
+  <!-- ground -->
+  <path d="M120 534H1520" stroke="#f2efe9" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- dimension: wheelbase -->
+  <g stroke="#c8102e" stroke-width="1.2">
+    <path d="M370 572H1250M370 562v20M1250 562v20"/>
+    <path d="M380 567l-10 5 10 5M1240 567l10 5-10 5"/>
+  </g>
+  <g fill="#f2efe9" fill-opacity="0.55" font-family="Sora, Helvetica, Arial, sans-serif" font-size="13" letter-spacing="3">
+    <text x="810" y="600" text-anchor="middle">WHEELBASE</text>
+  </g>
+  <!-- height dimension -->
+  <g stroke="#f2efe9" stroke-opacity="0.3" stroke-width="1">
+    <path d="M1500 205V534M1490 205h20M1490 534h20"/>
+  </g>
+</svg>

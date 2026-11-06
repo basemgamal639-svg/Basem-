@@ -8,20 +8,25 @@ const business = require('../config/business');
 
 const name = business.name || `${business.logoFallback.primary} ${business.logoFallback.secondary}`;
 const city = business.address.city ? ` · ${business.address.city}` : '';
-const hero = fs.readFileSync(path.join(__dirname, '../public/images/hero-workshop.svg'), 'utf8');
+const car = fs.readFileSync(path.join(__dirname, '../public/images/drawing-car.svg'), 'utf8');
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
 const html = `<!doctype html><html><head>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600&display=swap" rel="stylesheet">
 <style>
-body{margin:0;width:1200px;height:630px;background:#121417;color:#fff;font-family:'Barlow Condensed',Arial Narrow,sans-serif;display:grid;grid-template-columns:1fr 520px;align-items:center;overflow:hidden;
-background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:64px 64px}
-.l{padding:0 0 0 72px}.k{font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.12em;color:#a7adb5;text-transform:uppercase}
-h1{font-size:96px;line-height:.92;margin:22px 0 28px;text-transform:uppercase}h1 span{color:#ff5b14}
-.n{display:inline-block;background:#ff5b14;color:#121417;font-size:34px;font-weight:700;padding:10px 22px;text-transform:uppercase;letter-spacing:.04em}
-.r svg{width:520px;height:auto;display:block}
-</style></head><body><div class="l"><div class="k">Auto repair &amp; maintenance${esc(city)}</div>
-<h1>Expert Auto Repair. <span>Honest Service.</span></h1><div class="n">${esc(name)}</div></div><div class="r">${hero}</div></body></html>`;
+body{margin:0;width:1200px;height:630px;background:#141618;color:#fff;font-family:Sora,Helvetica,Arial,sans-serif;position:relative;overflow:hidden}
+.car{position:absolute;right:-90px;bottom:40px;width:820px;opacity:.9}
+.fade{position:absolute;inset:0;background:linear-gradient(90deg,#141618 0%,rgba(20,22,24,.85) 40%,rgba(20,22,24,0) 75%)}
+.c{position:absolute;left:72px;top:84px}
+.k{font-size:17px;letter-spacing:.18em;text-transform:uppercase;color:#9ea2a8;display:flex;align-items:center;gap:14px}
+.k:before{content:'';width:32px;height:2px;background:#c8102e}
+h1{font-size:76px;line-height:1.02;letter-spacing:-.04em;font-weight:500;margin:30px 0 0;max-width:640px}
+h1 span{display:block;color:#bdb9b1}
+.n{position:absolute;left:72px;bottom:64px;font-size:26px;font-weight:600;letter-spacing:-.01em}
+.n:after{content:'';display:inline-block;width:10px;height:10px;background:#c8102e;margin-left:10px}
+</style></head><body><div class="car">${car}</div><div class="fade"></div>
+<div class="c"><div class="k">Auto repair &amp; servicing${esc(city)}</div><h1>Precision Repairs. <span>Performance You Can Trust.</span></h1></div>
+<div class="n">${esc(name)}</div></body></html>`;
 
 (async () => {
   const browser = await chromium.launch();

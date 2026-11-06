@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="800" height="1000" fill="#1b1d20"/>
+  <g stroke="#ffffff" stroke-opacity="0.06"><path d="M400 0V1000M0 470H800"/></g>
+  <g stroke="#f2efe9" stroke-width="1.5">
+    <circle cx="400" cy="470" r="280" stroke-opacity="0.7"/>
+    <circle cx="400" cy="470" r="262" stroke-opacity="0.25"/>
+    <circle cx="400" cy="470" r="150" stroke-opacity="0.55"/>
+    <circle cx="400" cy="470" r="96" stroke-opacity="0.6"/>
+    <circle cx="400" cy="470" r="36" stroke-opacity="0.6"/>
+  </g>
+  <g stroke="#f2efe9" stroke-opacity="0.45" stroke-width="1.4">
+    <circle cx="400" cy="404" r="11"/><circle cx="463" cy="450" r="11"/><circle cx="439" cy="523" r="11"/><circle cx="361" cy="523" r="11"/><circle cx="337" cy="450" r="11"/>
+  </g>
+  <g stroke="#f2efe9" stroke-opacity="0.28" stroke-width="1.2" id="d">
+    <circle cx="400" cy="250" r="7"/><circle cx="400" cy="690" r="7"/><circle cx="180" cy="470" r="7"/><circle cx="620" cy="470" r="7"/>
+    <circle cx="245" cy="315" r="7"/><circle cx="555" cy="315" r="7"/><circle cx="245" cy="625" r="7"/><circle cx="555" cy="625" r="7"/>
+    <circle cx="316" cy="267" r="7"/><circle cx="484" cy="267" r="7"/><circle cx="316" cy="673" r="7"/><circle cx="484" cy="673" r="7"/>
+    <circle cx="197" cy="386" r="7"/><circle cx="603" cy="386" r="7"/><circle cx="197" cy="554" r="7"/><circle cx="603" cy="554" r="7"/>
+  </g>
+  <!-- caliper -->
+  <path d="M556 238C640 280 690 360 700 450L640 462C632 390 596 330 532 292Z" stroke="#c8102e" stroke-width="2"/>
+  <path d="M572 270C628 306 660 360 668 418" stroke="#c8102e" stroke-opacity="0.6" stroke-width="1.2"/>
+  <circle cx="560" cy="268" r="9" stroke="#c8102e" stroke-width="1.4"/>
+  <circle cx="676" cy="440" r="9" stroke="#c8102e" stroke-width="1.4"/>
+  <!-- dimension -->
+  <g stroke="#f2efe9" stroke-opacity="0.35" stroke-width="1">
+    <path d="M120 830H680M120 820v20M680 820v20"/>
+  </g>
+  <text x="400" y="866" text-anchor="middle" fill="#f2efe9" fill-opacity="0.5" font-family="Sora, Helvetica, Arial, sans-serif" font-size="14" letter-spacing="4">ROTOR Ø</text>
+</svg>
