@@ -1,0 +1,16 @@
+{
+  "name": "site",
+  "entry": "entry.ts",
+  "automations": [
+    {
+      "name": "daily-housekeeping",
+      "description": "Expire old listings, end featured periods and lapse unpaid subscriptions (06:15 UTC daily).",
+      "type": "scheduled",
+      "schedule_mode": "recurring",
+      "schedule_type": "cron",
+      "cron_expression": "15 6 * * *",
+      "function_args": { "action": "maintenance" },
+      "is_active": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+// StaffTO — Base44 project configuration.
+// Docs: https://docs.base44.com/developers/backend/overview/project-structure
+{
+  "name": "StaffTO",
+  "description": "Toronto & GTA hospitality recruitment marketplace: jobs, employers, classifieds and community.",
+  "visibility": "public",
+  "site": {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "serveCommand": "npm run dev",
+    "outputDirectory": "./dist"
+  }
+}

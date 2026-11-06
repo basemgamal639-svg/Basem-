@@ -1,0 +1,286 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Job",
+  "description": "A job listing. Public read; all writes go through the `jobs` backend function (plan limits, moderation).",
+  "type": "object",
+  "properties": {
+    "employer_id": {
+      "type": "string",
+      "description": "Employer record id"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "User id of the employer owner"
+    },
+    "employer_name": {
+      "type": "string",
+      "description": "Denormalised employer name"
+    },
+    "employer_logo": {
+      "type": "string",
+      "description": "Denormalised employer logo URL"
+    },
+    "employer_verified": {
+      "type": "boolean",
+      "description": "Denormalised verification badge",
+      "default": false
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL slug"
+    },
+    "title": {
+      "type": "string",
+      "description": "Position title",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "chef",
+        "sous_chef",
+        "line_cook",
+        "prep_cook",
+        "dishwasher",
+        "kitchen_manager",
+        "restaurant_manager",
+        "server",
+        "bartender",
+        "barista",
+        "host",
+        "busser",
+        "catering_staff",
+        "event_staff",
+        "other"
+      ],
+      "description": "Job category"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "downtown_toronto",
+        "north_york",
+        "scarborough",
+        "etobicoke",
+        "east_york",
+        "york",
+        "mississauga",
+        "brampton",
+        "markham",
+        "vaughan",
+        "richmond_hill",
+        "oakville",
+        "pickering",
+        "ajax",
+        "other_gta"
+      ],
+      "description": "GTA area"
+    },
+    "address": {
+      "type": "string",
+      "description": "Work address or intersection"
+    },
+    "employment_type": {
+      "type": "string",
+      "enum": [
+        "full_time",
+        "part_time",
+        "contract",
+        "seasonal",
+        "temporary"
+      ],
+      "description": "Employment type"
+    },
+    "salary_min": {
+      "type": "number",
+      "description": "Minimum pay",
+      "minimum": 0
+    },
+    "salary_max": {
+      "type": "number",
+      "description": "Maximum pay",
+      "minimum": 0
+    },
+    "salary_period": {
+      "type": "string",
+      "enum": [
+        "hour",
+        "year"
+      ],
+      "description": "Pay period",
+      "default": "hour"
+    },
+    "tips": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pooled",
+        "individual",
+        "service_charge"
+      ],
+      "description": "Tips / gratuities arrangement",
+      "default": "none"
+    },
+    "experience_level": {
+      "type": "string",
+      "enum": [
+        "none",
+        "under_1",
+        "1_2",
+        "3_5",
+        "5_plus"
+      ],
+      "description": "Experience required"
+    },
+    "description": {
+      "type": "string",
+      "description": "Role description",
+      "maxLength": 8000
+    },
+    "responsibilities": {
+      "type": "string",
+      "description": "Responsibilities",
+      "maxLength": 6000
+    },
+    "requirements": {
+      "type": "string",
+      "description": "Requirements",
+      "maxLength": 6000
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key skills used for matching"
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Required or preferred certifications, e.g. Smart Serve, Food Handler"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Working languages"
+    },
+    "shifts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Shift pattern: mornings, afternoons, evenings, overnight, weekends"
+    },
+    "benefits": {
+      "type": "string",
+      "description": "Benefits and perks",
+      "maxLength": 3000
+    },
+    "start_date": {
+      "type": "string",
+      "description": "Expected start date",
+      "format": "date"
+    },
+    "vacancy_status": {
+      "type": "string",
+      "enum": [
+        "existing",
+        "future"
+      ],
+      "description": "Ontario ESA: whether the posting is for an existing vacancy",
+      "default": "existing"
+    },
+    "uses_ai_screening": {
+      "type": "boolean",
+      "description": "Employer uses AI-assisted screening (disclosed on the posting)",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "closed",
+        "removed",
+        "expired"
+      ],
+      "description": "Listing status",
+      "default": "draft"
+    },
+    "moderation_note": {
+      "type": "string",
+      "description": "Reason for removal by an administrator"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "description": "Featured listing",
+      "default": false
+    },
+    "featured_until": {
+      "type": "string",
+      "description": "Featured until (ISO)",
+      "format": "date-time"
+    },
+    "published_at": {
+      "type": "string",
+      "description": "First published at (ISO)",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "Listing expiry (ISO)",
+      "format": "date-time"
+    },
+    "closed_at": {
+      "type": "string",
+      "description": "Closed at (ISO)",
+      "format": "date-time"
+    },
+    "views": {
+      "type": "number",
+      "description": "Detail page views",
+      "default": 0
+    },
+    "applications_count": {
+      "type": "number",
+      "description": "Applications received",
+      "default": 0
+    },
+    "share_count": {
+      "type": "number",
+      "description": "Times the share kit was used",
+      "default": 0
+    }
+  },
+  "required": [
+    "employer_id",
+    "owner_id",
+    "title",
+    "category",
+    "location",
+    "employment_type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

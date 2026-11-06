@@ -1,0 +1,89 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Article",
+  "description": "Marketing content: hiring guides, job search advice, salary guides, industry articles.",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "URL slug"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title"
+    },
+    "excerpt": {
+      "type": "string",
+      "description": "Excerpt",
+      "maxLength": 400
+    },
+    "body": {
+      "type": "string",
+      "description": "Body (Markdown)",
+      "maxLength": 60000
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "hiring_guide",
+        "job_search",
+        "salary_guide",
+        "industry",
+        "employer_tips"
+      ],
+      "description": "Category"
+    },
+    "cover_url": {
+      "type": "string",
+      "description": "Cover image URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "description": "Status",
+      "default": "draft"
+    },
+    "published_at": {
+      "type": "string",
+      "description": "Published at",
+      "format": "date-time"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Author"
+    },
+    "seo_title": {
+      "type": "string",
+      "description": "SEO title"
+    },
+    "seo_description": {
+      "type": "string",
+      "description": "SEO description"
+    }
+  },
+  "required": [
+    "slug",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

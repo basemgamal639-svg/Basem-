@@ -1,0 +1,102 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Campaign",
+  "description": "Community / marketing campaigns (e.g. a week of Facebook group posts). Performance is measured from AnalyticsEvent utm_campaign.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Campaign name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "utm_campaign value"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "facebook_group",
+        "facebook_page",
+        "instagram",
+        "email",
+        "partner",
+        "other"
+      ],
+      "description": "Channel"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "running",
+        "completed",
+        "paused"
+      ],
+      "description": "Status",
+      "default": "planned"
+    },
+    "start_date": {
+      "type": "string",
+      "description": "Start",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "description": "End",
+      "format": "date"
+    },
+    "target_url": {
+      "type": "string",
+      "description": "Landing URL"
+    },
+    "post_copy": {
+      "type": "string",
+      "description": "Approved post copy",
+      "maxLength": 4000
+    },
+    "job_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Jobs promoted"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes",
+      "maxLength": 4000
+    },
+    "budget_cents": {
+      "type": "number",
+      "description": "Budget, cents",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "channel"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

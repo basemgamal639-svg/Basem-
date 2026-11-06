@@ -1,0 +1,195 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "CandidateProfile",
+  "description": "Job seeker profile. Private to its owner; employers see it only via the `jobs` function for their own applicants.",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner user id"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Full name",
+      "maxLength": 120
+    },
+    "headline": {
+      "type": "string",
+      "description": "Short headline, e.g. \"Line cook, 4 years in high-volume kitchens\"",
+      "maxLength": 160
+    },
+    "email": {
+      "type": "string",
+      "description": "Contact email",
+      "format": "email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "downtown_toronto",
+        "north_york",
+        "scarborough",
+        "etobicoke",
+        "east_york",
+        "york",
+        "mississauga",
+        "brampton",
+        "markham",
+        "vaughan",
+        "richmond_hill",
+        "oakville",
+        "pickering",
+        "ajax",
+        "other_gta"
+      ],
+      "description": "Home GTA area"
+    },
+    "bio": {
+      "type": "string",
+      "description": "About",
+      "maxLength": 3000
+    },
+    "years_experience": {
+      "type": "number",
+      "description": "Years of hospitality experience",
+      "minimum": 0,
+      "maximum": 60
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Skills"
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Certifications (Smart Serve, Food Handler, First Aid...)"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Languages"
+    },
+    "preferred_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Preferred job categories"
+    },
+    "preferred_locations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Preferred GTA areas"
+    },
+    "availability": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Employment types wanted (full_time, part_time, ...)"
+    },
+    "shifts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Shifts available"
+    },
+    "salary_expectation": {
+      "type": "number",
+      "description": "Minimum expected pay"
+    },
+    "salary_period": {
+      "type": "string",
+      "enum": [
+        "hour",
+        "year"
+      ],
+      "description": "Pay period",
+      "default": "hour"
+    },
+    "work_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Employment history [{employer, role, start, end, current, description}]"
+    },
+    "legally_entitled": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no",
+        "prefer_not"
+      ],
+      "description": "Legally entitled to work in Canada (asked as permitted by the Ontario Human Rights Code)"
+    },
+    "primary_resume_id": {
+      "type": "string",
+      "description": "Default resume id"
+    },
+    "open_to_work": {
+      "type": "boolean",
+      "description": "Show \"open to work\" status to employers I apply to",
+      "default": true
+    }
+  },
+  "required": [
+    "user_id",
+    "full_name"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

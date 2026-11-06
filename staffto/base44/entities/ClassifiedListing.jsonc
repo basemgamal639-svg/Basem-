@@ -1,0 +1,149 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "ClassifiedListing",
+  "description": "Hospitality classifieds (equipment, supplies, business opportunities). Public read; writes via `marketplace` function.",
+  "type": "object",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "Seller user id"
+    },
+    "seller_name": {
+      "type": "string",
+      "description": "Seller display name"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "restaurant_equipment",
+        "kitchen_equipment",
+        "restaurant_supplies",
+        "furniture",
+        "appliances",
+        "business_opportunities",
+        "other"
+      ],
+      "description": "Category"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description",
+      "maxLength": 6000
+    },
+    "price_cents": {
+      "type": "number",
+      "description": "Price in cents"
+    },
+    "price_type": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "negotiable",
+        "free",
+        "contact"
+      ],
+      "description": "Pricing",
+      "default": "fixed"
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "new",
+        "like_new",
+        "good",
+        "fair",
+        "for_parts",
+        "not_applicable"
+      ],
+      "description": "Condition"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "downtown_toronto",
+        "north_york",
+        "scarborough",
+        "etobicoke",
+        "east_york",
+        "york",
+        "mississauga",
+        "brampton",
+        "markham",
+        "vaughan",
+        "richmond_hill",
+        "oakville",
+        "pickering",
+        "ajax",
+        "other_gta"
+      ],
+      "description": "GTA area"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Public photo URLs"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "sold",
+        "removed"
+      ],
+      "description": "Status",
+      "default": "pending"
+    },
+    "moderation_note": {
+      "type": "string",
+      "description": "Moderator note"
+    },
+    "views": {
+      "type": "number",
+      "description": "Views",
+      "default": 0
+    },
+    "report_count": {
+      "type": "number",
+      "description": "Open reports",
+      "default": 0
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When a moderator first approved the listing"
+    }
+  },
+  "required": [
+    "owner_id",
+    "title",
+    "category",
+    "location"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

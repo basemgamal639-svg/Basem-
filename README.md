@@ -113,3 +113,7 @@ public/               CSS, JavaScript (main.js behaviour, motion.js animation), 
 src/client/           Entry file for the Motion bundle
 test/                 API, booking and admin tests (node --test)
 ```
+
+## StaffTO (Toronto hospitality jobs marketplace)
+
+The `staffto/` directory contains StaffTO, a Base44-backed recruitment marketplace for Toronto & GTA hospitality. See [`staffto/README.md`](staffto/README.md).

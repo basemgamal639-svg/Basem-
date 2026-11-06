@@ -1,0 +1,309 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "JobApplication",
+  "description": "An application. Readable by the applicant and the hiring employer; written only by backend functions.",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Job id"
+    },
+    "job_title": {
+      "type": "string",
+      "description": "Denormalised job title"
+    },
+    "employer_id": {
+      "type": "string",
+      "description": "Employer id"
+    },
+    "employer_name": {
+      "type": "string",
+      "description": "Denormalised employer name"
+    },
+    "employer_owner_id": {
+      "type": "string",
+      "description": "User id of the hiring employer"
+    },
+    "applicant_id": {
+      "type": "string",
+      "description": "User id of the applicant"
+    },
+    "applicant_name": {
+      "type": "string",
+      "description": "Applicant name"
+    },
+    "applicant_email": {
+      "type": "string",
+      "description": "Applicant email"
+    },
+    "applicant_phone": {
+      "type": "string",
+      "description": "Applicant phone"
+    },
+    "candidate_profile_id": {
+      "type": "string",
+      "description": "CandidateProfile id at time of application"
+    },
+    "resume_id": {
+      "type": "string",
+      "description": "Resume id"
+    },
+    "resume_name": {
+      "type": "string",
+      "description": "Resume file name"
+    },
+    "cover_letter": {
+      "type": "string",
+      "description": "Cover note",
+      "maxLength": 5000
+    },
+    "availability_note": {
+      "type": "string",
+      "description": "Availability note from the applicant",
+      "maxLength": 500
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "viewed",
+        "shortlisted",
+        "interview",
+        "offered",
+        "hired",
+        "rejected",
+        "withdrawn"
+      ],
+      "description": "Pipeline status",
+      "default": "submitted"
+    },
+    "status_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Status changes [{status, at, by}]"
+    },
+    "ai_consent": {
+      "type": "boolean",
+      "description": "Applicant consented to AI-assisted analysis for this application",
+      "default": false
+    },
+    "employer_notes": {
+      "type": "string",
+      "description": "Private employer notes",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "employer_rating": {
+      "type": "number",
+      "description": "Private employer rating 1-5",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_score": {
+      "type": "number",
+      "description": "Advisory relevance score 0-100",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_breakdown": {
+      "type": "object",
+      "description": "Score breakdown by criterion with explanations",
+      "additionalProperties": true,
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "Generated candidate summary",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_matched": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Matching qualifications",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_missing": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Missing qualifications",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_method": {
+      "type": "string",
+      "description": "rules | rules+llm",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ai_generated_at": {
+      "type": "string",
+      "description": "When the analysis ran",
+      "format": "date-time",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "data.employer_owner_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "source": {
+      "type": "string",
+      "description": "Attribution source (utm_source/ref)"
+    },
+    "withdrawn_at": {
+      "type": "string",
+      "description": "Withdrawn at",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "job_id",
+    "employer_owner_id",
+    "applicant_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.applicant_id": "{{user.id}}"
+        },
+        {
+          "data.employer_owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

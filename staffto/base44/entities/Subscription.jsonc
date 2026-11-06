@@ -1,0 +1,92 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Subscription",
+  "description": "Employer subscription state. Written only by billing/admin functions.",
+  "type": "object",
+  "properties": {
+    "employer_id": {
+      "type": "string",
+      "description": "Employer id"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Owner user id"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "pro",
+        "premium"
+      ],
+      "description": "Subscribed plan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "past_due",
+        "cancelled"
+      ],
+      "description": "Status",
+      "default": "pending"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "manual",
+        "promo"
+      ],
+      "description": "Payment provider"
+    },
+    "provider_ref": {
+      "type": "string",
+      "description": "Provider subscription id"
+    },
+    "current_period_end": {
+      "type": "string",
+      "description": "Current period end",
+      "format": "date-time"
+    },
+    "cancel_at_period_end": {
+      "type": "boolean",
+      "description": "Will cancel at period end",
+      "default": false
+    }
+  },
+  "required": [
+    "employer_id",
+    "owner_id",
+    "plan"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

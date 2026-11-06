@@ -1,0 +1,84 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Resume",
+  "description": "Resume/CV stored as a private file. Owner-only; employers get a short-lived signed URL via the `jobs` function.",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner user id"
+    },
+    "file_uri": {
+      "type": "string",
+      "description": "Private file URI (UploadPrivateFile)"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Bytes"
+    },
+    "mime_type": {
+      "type": "string",
+      "description": "MIME type"
+    },
+    "is_primary": {
+      "type": "boolean",
+      "description": "Default resume",
+      "default": false
+    },
+    "extracted_text": {
+      "type": "string",
+      "description": "Plain-text extract used for AI analysis (only with consent)",
+      "maxLength": 30000
+    }
+  },
+  "required": [
+    "user_id",
+    "file_uri",
+    "file_name"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

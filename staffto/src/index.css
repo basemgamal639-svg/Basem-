@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+  body { font-feature-settings: "ss01", "cv11"; }
+  ::selection { background: #D2341E; color: #fff; }
+  :focus-visible { outline: 2px solid #D2341E; outline-offset: 2px; }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+}
+@media print {
+  header, footer, aside, [role="dialog"][aria-label="Cookie and analytics choices"] { display: none !important; }
+  body { background: #fff; }
+}

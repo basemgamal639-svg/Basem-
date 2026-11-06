@@ -1,0 +1,62 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Referral",
+  "description": "Referral codes and their attributed results.",
+  "type": "object",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "Referrer user id"
+    },
+    "code": {
+      "type": "string",
+      "description": "Referral code"
+    },
+    "visits": {
+      "type": "number",
+      "description": "Attributed visits",
+      "default": 0
+    },
+    "signups": {
+      "type": "number",
+      "description": "Attributed sign-ups",
+      "default": 0
+    },
+    "applications": {
+      "type": "number",
+      "description": "Attributed applications",
+      "default": 0
+    }
+  },
+  "required": [
+    "owner_id",
+    "code"
+  ],
+  "rls": {
+    "create": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

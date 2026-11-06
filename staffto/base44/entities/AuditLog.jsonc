@@ -1,0 +1,59 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "AuditLog",
+  "description": "Append-only log of sensitive administrative actions.",
+  "type": "object",
+  "properties": {
+    "actor_id": {
+      "type": "string",
+      "description": "Admin user id"
+    },
+    "actor_email": {
+      "type": "string",
+      "description": "Admin email"
+    },
+    "action": {
+      "type": "string",
+      "description": "Action"
+    },
+    "target_type": {
+      "type": "string",
+      "description": "Target type"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Target id"
+    },
+    "details": {
+      "type": "object",
+      "description": "Details",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "actor_id",
+    "action"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
