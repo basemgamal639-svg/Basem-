@@ -40,18 +40,34 @@ Everything business-specific lives in `config/`. The admin dashboard shows a **S
 
 ### Photography
 
-The site is designed around large photos. Until real photos are added, it shows technical line drawings (a car side view, a brake assembly, a gauge) so the pages still look finished.
+The site ships with a curated set of **stock photos** (Unsplash License: free for commercial use, no attribution required), so it looks finished from day one. They cover the hero, the About section, every service and the gallery. Sources are listed in `public/images/photos/CREDITS.md`, and responsive sizes are served as WebP with `srcset`.
 
-Put your photos in `public/images/photos/`, then reference them in `config/business.js` under `photos.hero`, `photos.about`, `photos.aboutDetail` and `gallery`, and in each service's `image` in `config/services.js`. Recommended sizes:
+Photos of **your own** workshop, team and real jobs will always build more trust than stock, and the gallery should show your own work. While any stock photo is in use, the admin **Setup** list reminds you to replace it.
 
-- Hero: 2400×1350, landscape.
-- About: 4:5 portrait.
-- Services: 4:5.
-- Gallery: any orientation. Every fifth image is shown large.
+To replace a photo, put your file in `public/images/photos/`, then set it in `config/business.js` (`photos.hero`, `photos.about`, `photos.aboutDetail`, `gallery`) or as a service's `image` in `config/services.js`. Include `width` and `height` to avoid layout shift. Recommended sizes:
+
+- Hero: 2400×1350, landscape. Keep the left side darker, because the headline sits there.
+- About: 4:5 portrait. Detail image: square.
+- Services: 4:5 portrait.
+- Gallery: any orientation, in groups of six (one large and two stacked, then three across). Only use before-and-after pairs from real jobs.
 
 Compress images to WebP or a high-quality JPEG of about 300 KB each.
 
 After setting your name, regenerate the social share image with `npm i -D playwright && npm run og-image`.
+
+## Animation
+
+Motion is a progressive enhancement built on [Motion](https://motion.dev) (the successor to Framer Motion), using its framework-free API, because the site is server-rendered without React. Only the functions the site uses are bundled into `public/js/vendor/motion.js` (about 6 KB gzipped). Rebuild it with `npm run build:motion` after upgrading the `motion` package.
+
+`public/js/motion.js` adds:
+- staggered scroll reveals
+- a slow settle on the hero photo
+- spring transitions between booking steps
+- staggered time slots
+- a follow-through on the confirmation screens
+- lightbox transitions
+
+It animates only transform and opacity. It only hides content that starts below the fold, does nothing for visitors who prefer reduced motion, and the site works fully if the script never loads. `public/js/main.js` handles all behaviour and only fires `site:*` events for the motion layer to respond to.
 
 ## How booking works
 
@@ -86,13 +102,14 @@ Use any Node host with a **persistent disk** (Render, Railway, Fly.io, a VPS). S
 
 ```
 server.js             Pages, public APIs (availability, booking, contact), admin APIs
-config/               business.js, services.js, faq.js, vehicles.js
+config/               business.js, services.js, faq.js, vehicles.js, photos.js (stock photo set)
 src/schedule.js       Slot generation, availability, confirmed-slot capacity
 src/notify.js         Email alerts (nodemailer, optional)
 src/db.js             SQLite schema and migrations
 src/auth.js           Admin password and sessions
 src/validation.js     Server-side validation
 src/views/            Server-rendered HTML
-public/               CSS, JavaScript, images
+public/               CSS, JavaScript (main.js behaviour, motion.js animation), images
+src/client/           Entry file for the Motion bundle
 test/                 API, booking and admin tests (node --test)
 ```

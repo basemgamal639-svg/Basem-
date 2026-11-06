@@ -21,6 +21,10 @@
     var top = el.getBoundingClientRect().top + scrollY - (head ? head.offsetHeight : 0) - 16;
     window.scrollTo({ top: Math.max(0, top), behavior: reduceMotion ? 'auto' : 'smooth' });
   }
+  // Lets the optional motion layer (public/js/motion.js) animate key moments. Behaviour never depends on it.
+  function emit(name, detail) {
+    try { document.dispatchEvent(new CustomEvent('site:' + name, { detail: detail })); } catch (err) { /* very old browser */ }
+  }
   function setErr(el, msg) {
     if (!el) return;
     var field = el.closest('.field');
@@ -127,6 +131,8 @@
     var slotReq = 0;
 
     function show(n, focus) {
+      var dir = n >= current ? 1 : -1;
+      var changed = n !== current;
       current = n;
       steps.forEach(function (s) { s.hidden = Number(s.dataset.step) !== n; });
       tabs.forEach(function (t) {
@@ -134,6 +140,7 @@
         if (i === n) t.setAttribute('aria-current', 'step'); else t.removeAttribute('aria-current');
         t.classList.toggle('done', i < n);
       });
+      if (changed) emit('step', { el: steps[n - 1], dir: dir });
       if (focus) {
         var target = $('input:not([type=hidden]):not([tabindex="-1"]), select', steps[n - 1]);
         var top = form.getBoundingClientRect().top;
@@ -263,6 +270,7 @@
             return '<label class="slot"><input type="radio" name="preferred_time" value="' + s.time + '"' + (s.available ? '' : ' disabled') +
               ' aria-label="' + s.time + (s.available ? '' : ', unavailable') + '"><span>' + s.time + '</span></label>';
           }).join('');
+          emit('slots', { el: slotsBox });
         })
         .catch(function () { if (req === slotReq) slotMsg('We couldn’t load the available times.', true); })
         .then(function () { slotsBox.removeAttribute('aria-busy'); });
@@ -300,6 +308,7 @@
             $('[data-confirm-summary]', confirmation).innerHTML = summaryRows(d);
             form.hidden = true;
             confirmation.hidden = false;
+            emit('reveal', { el: confirmation });
             scrollToEl(confirmation.parentElement);
             confirmation.focus({ preventScroll: true });
             return;
@@ -389,6 +398,7 @@
             $('[data-ref]', success).textContent = '(' + r.data.reference + ')';
             cform.hidden = true;
             success.hidden = false;
+            emit('reveal', { el: success });
             success.focus();
             return;
           }
@@ -422,11 +432,11 @@
       img.src = it.src; img.alt = it.alt; cap.textContent = it.caption || it.alt;
       count.textContent = (idx + 1) + ' / ' + items.length;
     };
-    var go = function (d) { idx = (idx + d + items.length) % items.length; render(); };
+    var go = function (d) { idx = (idx + d + items.length) % items.length; render(); emit('lightbox', { el: img, dir: d }); };
     document.addEventListener('click', function (e) {
       var b = e.target.closest('[data-lightbox]');
       if (!b) return;
-      opener = b; idx = Number(b.dataset.lightbox); render(); dlg.showModal();
+      opener = b; idx = Number(b.dataset.lightbox); render(); dlg.showModal(); emit('lightbox', { el: img, dir: 0 });
     });
     $('[data-lb-close]', dlg).addEventListener('click', function () { dlg.close(); });
     $('[data-lb-prev]', dlg).addEventListener('click', function () { go(-1); });

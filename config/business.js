@@ -7,6 +7,7 @@
  * Missing details are never added to the search-engine structured data.
  */
 const isProd = process.env.NODE_ENV === 'production';
+const stock = require('./photos'); // stock photography, see config/photos.js
 
 module.exports = {
   // Show [Placeholder] markers for missing details. Defaults to on in development, off in production.
@@ -53,16 +54,20 @@ module.exports = {
   // Example: { quote: '...', author: 'Jane D.', vehicle: '2017 Audi A4', source: 'Google' }
   testimonials: [],
 
-  // Photography. Put files in public/images/photos/ and reference them here.
-  // Until a photo is set, the site shows a technical line drawing in its place.
+  // Photography. Starts with stock photos (config/photos.js); replace them with your own.
+  // Put your files in public/images/photos/ and reference them like:
+  //   hero: { src: '/images/photos/hero.jpg', alt: 'Technician inspecting a car on a lift', width: 2400, height: 1350 }
+  // Recommended: hero 2400×1350 landscape, about 4:5 portrait, aboutDetail square.
   photos: {
-    hero: null, // e.g. { src: '/images/photos/hero.jpg', alt: 'Technician inspecting a car on a lift' } — wide, 2400×1350 recommended
-    about: null, // e.g. { src: '/images/photos/workshop.jpg', alt: 'Inside the workshop' } — portrait 4:5
-    aboutDetail: null, // smaller second image, square
+    hero: stock.hero,
+    about: stock.about,
+    aboutDetail: stock.aboutDetail,
   },
 
-  // Workshop gallery. Example: { src: '/images/photos/gallery-1.jpg', alt: 'Diagnostic scan on a BMW 3 Series', caption: 'Diagnostics' }
-  gallery: [],
+  // Workshop gallery. Replace with photos of your own work, e.g.
+  //   { src: '/images/photos/gallery-1.jpg', alt: 'Diagnostic scan on a BMW 3 Series', caption: 'Diagnostics', width: 1600, height: 1067 }
+  // Only show before-and-after pairs from real jobs.
+  gallery: stock.gallery,
 
   /* ---------- Online booking ---------- */
   booking: {

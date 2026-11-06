@@ -1,4 +1,4 @@
-const { esc, b, business } = require('./helpers');
+const { esc, b, business, services } = require('./helpers');
 const { sprite, icon } = require('../icons');
 const { logo } = require('./layout');
 
@@ -57,6 +57,8 @@ function setupChecklist(notifyEnabled) {
   if (!notifyEnabled) missing.push('Email alerts for new requests (NOTIFY_TO and SMTP settings)');
   if (!business.photos.hero) missing.push('Hero photo');
   if (!business.gallery.length) missing.push('Gallery photos');
+  const stockCount = [business.photos.hero, business.photos.about, business.photos.aboutDetail, ...business.gallery, ...services.map((s) => s.image)].filter((p) => p && p.stock).length;
+  if (stockCount) missing.push(`Replace ${stockCount} stock photos with photos of your own workshop and work (see config/photos.js)`);
   if (!business.mapEmbedUrl) missing.push('Google Maps embed');
   if (!business.googleBusinessUrl) missing.push('Google Business Profile link');
   if (!business.testimonials.length) missing.push('Genuine customer reviews');

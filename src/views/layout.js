@@ -123,6 +123,8 @@ ${body}
 </main>
 ${footer()}
 <script src="/js/main.js" defer></script>
+<script src="/js/vendor/motion.js" defer></script>
+<script src="/js/motion.js" defer></script>
 </body>
 </html>`;
 }

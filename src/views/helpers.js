@@ -45,7 +45,7 @@ function siteUrl(path = '/') {
 // Responsive photo, or the given fallback drawing until a real photo is configured.
 function photo(p, fallback, { cls = '', sizes = '100vw', eager = false } = {}) {
   if (p && p.src) {
-    return `<img class="${cls}" src="${esc(p.src)}" alt="${esc(p.alt || '')}" ${p.width ? `width="${p.width}" height="${p.height}"` : ''} sizes="${sizes}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+    return `<img class="${cls}" src="${esc(p.src)}"${p.srcset ? ` srcset="${esc(p.srcset)}" sizes="${sizes}"` : ''} alt="${esc(p.alt || '')}"${p.width ? ` width="${p.width}" height="${p.height}"` : ''} ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
   }
   return fallback;
 }
