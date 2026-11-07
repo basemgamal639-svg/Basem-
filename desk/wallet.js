@@ -13,6 +13,11 @@ function describePhantom(scope) {
   };
 }
 
+function rejectCluster(cluster) {
+  if (cluster === "devnet" || cluster === "local") return { ok: true };
+  return { ok: false, message: "Only devnet or local clusters are accepted. Mainnet is rejected." };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { describePhantom: describePhantom };
+  module.exports = { describePhantom: describePhantom, rejectCluster: rejectCluster };
 }

@@ -255,13 +255,23 @@
   }
 
   function bindSSE() {
-    if (!state.token || !window.EventSource) return;
-    // EventSource can't set headers — use query token
-    const es = new EventSource('/api/stream?t=' + encodeURIComponent(state.token));
-    ['scan','audit_layer','audit','verdict','signal','fill','exit','balance','activity'].forEach(ev => {
-      es.addEventListener(ev, () => { softRefresh(); });
-    });
-    es.onerror = () => { setOffline(true, 5); };
+    if (!state.token || onPages() || !window.fetch) return;
+    // Header only. A query token is rejected by the API.
+    fetch("/api/stream", {
+      headers: { "X-App-Token": state.token, "Accept": "text/event-stream" },
+    }).then(function (res) {
+      if (!res.ok || !res.body || !res.body.getReader) { setOffline(true, 5); return; }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      function pump() {
+        reader.read().then(function (result) {
+          if (result.done) return;
+          if (decoder.decode(result.value).indexOf("event:") >= 0) softRefresh();
+          pump();
+        }).catch(function () { setOffline(true, 5); });
+      }
+      pump();
+    }).catch(function () { setOffline(true, 5); });
   }
 
   let refreshTimer;

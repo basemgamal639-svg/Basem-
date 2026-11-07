@@ -5,7 +5,9 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -27,6 +29,27 @@ WEB = Path(__file__).resolve().parents[1] / "desk"
 
 def _secure_cookie() -> bool:
     return os.environ.get("SESSION_SECURE", "1") != "0"
+
+
+class RateLimiter:
+    def __init__(self, limit: int = 30, window: float = 60.0):
+        self.limit = limit
+        self.window = window
+        self.hits: dict[str, list[float]] = {}
+
+    def allow(self, key: str) -> bool:
+        now = time.time()
+        bucket = [stamp for stamp in self.hits.get(key, []) if now - stamp < self.window]
+        if len(bucket) >= self.limit:
+            self.hits[key] = bucket
+            return False
+        bucket.append(now)
+        self.hits[key] = bucket
+        return True
+
+
+_limiter = RateLimiter()
+_MINT = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
 
 
 class SettingsBody(BaseModel):
@@ -79,6 +102,15 @@ class LoginBody(BaseModel):
 
 def create_app(db, bus, desk=None) -> FastAPI:
     app = FastAPI(title="Pump Desk")
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = "default-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        return response
+
     app.state.db = db
     app.state.bus = bus
     app.state.desk = desk
@@ -95,8 +127,8 @@ def create_app(db, bus, desk=None) -> FastAPI:
             got = x_app_token
         elif authorization and authorization.lower().startswith("bearer "):
             got = authorization.split(" ", 1)[1].strip()
-        elif t:
-            got = t
+        if t:
+            raise HTTPException(status_code=401, detail="query token is not accepted")
         if not expected or got != expected:
             raise HTTPException(status_code=401, detail="unauthorized")
 
@@ -189,6 +221,8 @@ def create_app(db, bus, desk=None) -> FastAPI:
 
     @app.get("/api/coin/{mint}")
     async def coin(mint: str, _: None = auth):
+        if not _MINT.match(mint):
+            raise HTTPException(status_code=400, detail="bad mint")
         c = db.get_coin(mint) or {"mint": mint}
         prices = db.prices(mint)
         candles = _ohlc(prices)
@@ -456,9 +490,11 @@ def create_app(db, bus, desk=None) -> FastAPI:
             raise HTTPException(status_code=403, detail="csrf")
 
     @app.post("/api/session/nonce")
-    async def session_nonce(body: NonceBody, request: Request):
+    async def session_nonce(body: NonceBody, request: Request, _: None = auth):
         _origin_ok(request)
         _require_custom_header(request)
+        if not _limiter.allow(request.client.host if request.client else "local"):
+            raise HTTPException(status_code=429, detail="rate limit")
         domain = request.headers.get("host") or "localhost"
         try:
             issued = sessionmod.issue_nonce(db, body.wallet, body.cluster, domain)

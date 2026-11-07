@@ -23,6 +23,8 @@ class PlanBWriter:
         return bool(self.data_path)
 
     def ensure(self):
+        # Unauthenticated Plan B export is disabled. Files are not created or mounted.
+        return
         if not self.root:
             return
         self.root.mkdir(parents=True, exist_ok=True)
@@ -34,6 +36,7 @@ class PlanBWriter:
         (dparent / "index.html").write_text("Not found\n")
 
     async def run(self):
+        return
         if not self.enabled():
             return
         self.ensure()

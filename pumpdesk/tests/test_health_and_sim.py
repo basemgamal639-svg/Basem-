@@ -66,6 +66,9 @@ class SafetyTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             db.end_night(night, full=True)
         self.assertFalse(db.has_full_paper_night())
+        empty = db.complete_paper_night(night, who="operator-test")
+        self.assertFalse(empty[0])
+        db.add_scan({"mint": MINT, "ts": config.now_iso(), "verdict": "pass"})
         ok, _msg = db.complete_paper_night(night, who="operator-test")
         self.assertTrue(ok)
         self.assertTrue(db.has_full_paper_night())

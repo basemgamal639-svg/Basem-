@@ -619,6 +619,14 @@ class DB:
                 return False, "night not found"
             if str(row["mode"]).upper() != "PAPER":
                 return False, "only a PAPER night can be marked full"
+            started = None
+            cur.execute("SELECT started_at FROM nights WHERE id=?", (night_id,))
+            started = cur.fetchone()["started_at"]
+            if not started:
+                return False, "night has no start time"
+            cur.execute("SELECT COUNT(*) AS c FROM scans WHERE ts>=?", (started,))
+            if int(cur.fetchone()["c"]) < 1:
+                return False, "night has no scans; refusing to mark an empty night full"
             cur.execute(
                 "UPDATE nights SET ended_at=?, full=1 WHERE id=?",
                 (_utc(), night_id),

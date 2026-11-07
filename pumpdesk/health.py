@@ -128,4 +128,5 @@ def build_health(db, bus, telegram=None, scanner=None, now: datetime | None = No
         "db_bytes": db_bytes,
         "broadcast_enabled": simpreview.BROADCAST_ENABLED,
         "simulated_only": True,
+        "heartbeat_is_not_ingestion": True,
     }

@@ -23,6 +23,104 @@ def _db():
 
 
 class UpgradeTests(unittest.TestCase):
+    def test_telegram_bought_does_not_fill(self):
+        import asyncio
+        from agents.executor import Executor
+        from bus import Bus
+        config.init()
+        db = _db()
+        exe = Executor(db, Bus(), notifier=None)
+        asyncio.run(exe.on_callback("bought:" + "So11111111111111111111111111111111111111112"))
+        self.assertIsNone(db.get_position("So11111111111111111111111111111111111111112"))
+
+    def test_unsigned_solana_message_is_not_a_broadcast(self):
+        from solders.hash import Hash
+        from solders.pubkey import Pubkey
+        from solana_prep import SYSTEM_PROGRAM, build_unsigned_self_transfer
+        payer = Pubkey.new_unique()
+        built = build_unsigned_self_transfer(payer, Hash.from_bytes(bytes([7] * 32)))
+        self.assertFalse(built["executable"])
+        self.assertFalse(built["broadcast"])
+        self.assertEqual(built["program_id"], SYSTEM_PROGRAM)
+        self.assertEqual(built["lamports"], 0)
+        self.assertNotIn("sendTransaction", Path(__file__).resolve().parents[1].joinpath("solana_prep.py").read_text())
+
+    def test_rpc_adapter_uses_transport_not_a_caller_blob(self):
+        from rpc_verify import RpcAdapter, verify_signature
+        calls = []
+
+        def transport(method, params):
+            calls.append(method)
+            if method == "getSignatureStatuses":
+                return {"value": [{"confirmationStatus": "finalized", "err": None}]}
+            return {
+                "cluster": "devnet",
+                "meta": {
+                    "err": None,
+                    "preTokenBalances": [{"owner": "owner", "mint": "mint", "uiTokenAmount": {"amount": "1"}}],
+                    "postTokenBalances": [{"owner": "owner", "mint": "mint", "uiTokenAmount": {"amount": "8"}}],
+                },
+                "transaction": {"signatures": ["sig1"], "message": "frozen"},
+            }
+
+        adapter = RpcAdapter("https://api.devnet.solana.com", transport, resolver=lambda host: ["1.1.1.1"])
+        result = verify_signature(adapter, {
+            "signature": "sig1",
+            "cluster": "devnet",
+            "mint": "mint",
+            "destination": "owner",
+            "min_amount_out": 5,
+            "side": "buy",
+            "message": "frozen",
+        })
+        self.assertEqual(calls, ["getSignatureStatuses", "getTransaction"])
+        self.assertTrue(result["filled"])
+        with self.assertRaises(Exception):
+            RpcAdapter("https://evil.example", transport, resolver=lambda host: ["1.1.1.1"])
+
+    def test_dns_pin_rejects_rebinding(self):
+        from rpc_allowlist import pin_resolved_host
+        ok, _ = pin_resolved_host("http://127.0.0.1:8899", resolver=lambda host: ["127.0.0.1"])
+        self.assertTrue(ok)
+        bad, _ = pin_resolved_host("https://api.devnet.solana.com", resolver=lambda host: ["169.254.169.254"])
+        self.assertFalse(bad)
+
+    def test_backup_roundtrip_on_synthetic_db(self):
+        from deploy.backup_sqlite import backup_file, restore_check
+        db = _db()
+        db.upsert_coin(mint="MintKept111111111111111111111111111111111", name="Kept")
+        dest = Path(tempfile.mkdtemp()) / "backup.db"
+        backup_file(db.path, dest)
+        self.assertTrue(restore_check(dest, "coins", "mint", "MintKept111111111111111111111111111111111"))
+
+    def test_query_token_is_rejected(self):
+        from fastapi.testclient import TestClient
+        from api import create_app
+        from bus import Bus
+        client = TestClient(create_app(_db(), Bus(), None))
+        response = client.get("/api/state?t=dummy-test-token")
+        self.assertEqual(response.status_code, 401)
+    def test_exact_legacy_ddl_keeps_synthetic_rows(self):
+        path = Path(tempfile.mkdtemp()) / "legacy.db"
+        con = sqlite3.connect(path)
+        con.executescript(Path(__file__).resolve().parent.joinpath("fixtures/legacy_user_version0.sql").read_text())
+        con.execute(
+            "INSERT INTO scans(mint,ts,verdict) VALUES (?,?,?)",
+            ("MintKept111111111111111111111111111111111", "2026-01-01T00:00:00Z", "kill"),
+        )
+        con.execute(
+            "INSERT INTO coins(mint,name) VALUES (?,?)",
+            ("MintKept111111111111111111111111111111111", "Kept"),
+        )
+        con.commit()
+        con.close()
+        db = DB(path)
+        self.assertEqual(db.get_coin("MintKept111111111111111111111111111111111")["name"], "Kept")
+        self.assertEqual(len(db.recent_scans(5)), 1)
+        with db.cursor() as cur:
+            cur.execute("SELECT version FROM schema_migrations")
+            self.assertEqual(cur.fetchone()["version"], 2)
+
     def test_old_fixture_keeps_rows_and_gains_tables(self):
         path = Path(tempfile.mkdtemp()) / "old.db"
         con = sqlite3.connect(path)
@@ -154,7 +252,7 @@ class UpgradeTests(unittest.TestCase):
         nonce = client.post(
             "/api/session/nonce",
             json={"wallet": wallet, "cluster": "devnet"},
-            headers={"X-Requested-With": "pumpdesk"},
+            headers={"X-Requested-With": "pumpdesk", "X-App-Token": "dummy-test-token"},
         )
         self.assertEqual(nonce.status_code, 200, nonce.text)
         csrf = nonce.cookies.get("desk_csrf")

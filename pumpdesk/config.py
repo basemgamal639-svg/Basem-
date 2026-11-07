@@ -57,6 +57,7 @@ DEFAULTS: dict[str, Any] = {
     "executor.recheck_liq_drop_pct": 20,
     "executor.recheck_price_up_pct": 15,
     "executor.confirm_window_min": 5,
+    "executor.max_quote_age_s": 30,
     # risk
     "risk.poll_s": 15,
     "risk.stop_pct": 6,

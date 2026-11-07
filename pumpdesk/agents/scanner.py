@@ -187,9 +187,9 @@ class Scanner:
             return []
 
     async def _rpc(self, method: str, params: list):
-        from rpc_allowlist import validate_rpc_url
+        from rpc_allowlist import pin_resolved_host
         rpc = str(config.get("desk.rpc_url") or "")
-        ok, _why = validate_rpc_url(rpc)
+        ok, _why = pin_resolved_host(rpc)
         if not ok:
             log.warning("rpc refused by allowlist")
             return None

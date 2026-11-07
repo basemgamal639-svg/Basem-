@@ -172,7 +172,6 @@ class Desk:
             asyncio.create_task(self.executor.run(), name="executor"),
             asyncio.create_task(self.risk.run(), name="risk"),
             asyncio.create_task(self._balance_ticker(), name="balance"),
-            asyncio.create_task(self.planb.run(), name="planb"),
         ]
         host = os.environ.get("DESK_HOST", "127.0.0.1")
         port = int(os.environ.get("DESK_PORT", "8787"))
