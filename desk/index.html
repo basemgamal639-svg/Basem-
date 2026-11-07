@@ -13,6 +13,7 @@
 </head>
 <body>
 <div id="offline" class="banner error hidden"></div>
+<div id="hostBanner" class="banner error hidden"></div>
 <header id="nav" class="nav">
   <button id="avatar" class="avatar" aria-label="Account">R</button>
   <div class="nav-title">Grok Bot <span class="chev">›</span></div>
@@ -26,6 +27,7 @@
     <div class="balance-row">
       <div id="balance" class="balance">$0.00</div>
       <span id="paperBadge" class="pill orange">PAPER</span>
+      <span id="liveBadge" class="pill red">LIVE unavailable</span>
     </div>
     <div class="sub-row">
       <span id="todayPct" class="secondary">+0.00%</span>
@@ -62,10 +64,19 @@
 
   <!-- ACCOUNT -->
   <section id="tab-account" class="tab">
+    <h2 class="section">Wallet</h2>
+    <div class="card">
+      <button id="connectWallet" class="btn">Connect wallet</button>
+      <div id="walletStatus" class="secondary">Wallet not connected</div>
+      <div id="walletAddress" class="secondary"></div>
+      <button id="disconnectWallet" class="btn">Disconnect</button>
+      <p class="secondary">Preview approval uses the Phantom browser provider. It does not enable LIVE or mainnet sending.</p>
+      <div id="intentHistory" class="secondary"></div>
+    </div>
     <h2 class="section">Mode</h2>
     <div class="row">
       <button id="modePaper" class="seg">PAPER</button>
-      <button id="modeLive" class="seg">LIVE</button>
+      <button id="modeLive" class="seg" disabled>LIVE unavailable</button>
     </div>
     <div class="card">
       <div class="row between">
@@ -116,6 +127,7 @@
   <button data-tab="account">Account</button>
 </nav>
 
+<script src="wallet.js"></script>
 <script src="chart.js"></script>
 <script src="app.js"></script>
 </body>

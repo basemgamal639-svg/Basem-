@@ -57,6 +57,7 @@ DEFAULTS: dict[str, Any] = {
     "executor.recheck_liq_drop_pct": 20,
     "executor.recheck_price_up_pct": 15,
     "executor.confirm_window_min": 5,
+    "executor.max_quote_age_s": 30,
     # risk
     "risk.poll_s": 15,
     "risk.stop_pct": 6,
@@ -78,6 +79,8 @@ DEFAULTS: dict[str, Any] = {
     "desk.owner_chat_id": 0,
     "desk.owner_telegram_username": "",
     "desk.tz": "America/Toronto",
+    "desk.emergency_stop": False,
+    "desk.broadcast_enabled": False,
 }
 
 RANGES: dict[str, tuple[float, float]] = {
@@ -181,13 +184,19 @@ def init(db=None):
     if handle:
         _state["desk.pump_handle"] = handle
     if db is not None:
-        rows = db.all_settings()
+        from settings_guard import quarantine
+        rows = quarantine(db, db.all_settings())
         for k, v in rows.items():
-            _state[k] = _coerce(k, v)
-        # persist defaults missing from db
+            if k in DEFAULTS or k.startswith("desk."):
+                try:
+                    _state[k] = _coerce(k, v)
+                except Exception:
+                    continue
         for k, v in _state.items():
             if k not in rows:
                 db.set_setting(k, v, who="init")
+    owner_wallet = os.environ.get("DESK_OWNER_WALLET", "").strip()
+    _state["desk.owner_wallet"] = owner_wallet
     load_secrets()
     return _state
 
@@ -230,6 +239,10 @@ def set_setting(key: str, value, who: str = "user", db=None) -> tuple[bool, str]
         value = str(value).upper()
         if value not in ("PAPER", "LIVE"):
             return False, "mode must be PAPER or LIVE"
+        if value == "LIVE":
+            return False, "LIVE is unavailable. Mainnet sending cannot be enabled."
+    if key == "desk.broadcast_enabled":
+        return False, "broadcast cannot be enabled"
     if key == "desk.rpc_url":
         from rpc_allowlist import validate_rpc_url
         ok_rpc, why = validate_rpc_url(str(value))

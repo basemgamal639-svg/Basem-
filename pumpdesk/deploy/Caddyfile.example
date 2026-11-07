@@ -1,0 +1,14 @@
+# Example only. Not installed and not started.
+# Terminate TLS here and proxy to the loopback desk. Do not bind the app on 0.0.0.0.
+#
+# desk.example {
+#   header {
+#     Content-Security-Policy "default-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+#     Referrer-Policy "no-referrer"
+#     X-Content-Type-Options "nosniff"
+#   }
+#   reverse_proxy 127.0.0.1:8787
+# }
+#
+# Set SESSION_SECURE=1 so the wallet cookie is Secure.
+# Set the public origin to this host. GitHub Pages must not receive the cookie.

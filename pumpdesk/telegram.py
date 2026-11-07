@@ -162,10 +162,7 @@ class Telegram:
         if low == "live":
             return "Type LIVE to confirm switching to LIVE mode."
         if raw.strip() == "LIVE":
-            if not self.db.has_full_paper_night():
-                return "Need at least 1 full PAPER night before LIVE."
-            ok, msg = config.set_setting("desk.mode", "LIVE", who="telegram", db=self.db)
-            return msg
+            return "LIVE is unavailable. Mainnet sending cannot be enabled."
         m = re.match(r"(?i)^stack\s+(\d+(?:\.\d+)?)$", raw)
         if m:
             ok, msg = config.set_setting("desk.live_stack", float(m.group(1)), who="telegram", db=self.db)
@@ -191,11 +188,7 @@ class Telegram:
             parts = raw.split(None, 1)
             return await self.on_command(parts[0].lower(), parts[1])
         if low in ("complete night", "/complete_night"):
-            night_id = getattr(self, "night_id", None)
-            if not night_id:
-                return "No open night id is attached to this process."
-            ok, msg = self.db.complete_paper_night(int(night_id), who="telegram-owner")
-            return msg if ok else f"Refuse: {msg}"
+            return "Refuse: night completion requires the owner wallet session, not a chat command."
         if low in ("report", "/report"):
             return "Morning Page not generated yet (routines come later)."
         # unknown

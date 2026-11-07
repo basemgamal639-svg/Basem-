@@ -187,22 +187,19 @@ class Scanner:
             return []
 
     async def _rpc(self, method: str, params: list):
-        from rpc_allowlist import validate_rpc_url
+        from pinned_rpc import RpcRefused, post_json
         rpc = str(config.get("desk.rpc_url") or "")
-        ok, _why = validate_rpc_url(rpc)
-        if not ok:
-            log.warning("rpc refused by allowlist")
-            return None
         for attempt in range(3):
             try:
-                r = await self.client.post(
-                    rpc, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-                )
+                r = await post_json(rpc, {"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
                 if r.status_code == 429:
                     await asyncio.sleep(2 * (attempt + 1))
                     continue
                 data = r.json()
                 return data.get("result")
+            except RpcRefused:
+                log.warning("rpc refused")
+                return None
             except Exception:
                 await asyncio.sleep(2)
         return None

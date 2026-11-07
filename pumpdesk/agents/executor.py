@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from pathlib import Path
 
 import httpx
@@ -73,7 +74,11 @@ class Executor:
                 return None
             data = r.json()
             pairs = data if isinstance(data, list) else []
-            return dexscreener_pumpswap_pair(pairs)
+            pair = dexscreener_pumpswap_pair(pairs)
+            if isinstance(pair, dict):
+                pair = dict(pair)
+                pair["_quote_unix"] = time.time()
+            return pair
         except Exception:
             return None
 
@@ -92,6 +97,19 @@ class Executor:
             return
         price = float(dig(dex, "priceUsd") or 0)
         liq = float(dig(dex, "liquidity.usd") or 0)
+        quote_unix = dig(dex, "_quote_unix")
+        dex_id = dig(dex, "dexId")
+        max_age = float(config.get("executor.max_quote_age_s") or 30)
+        fresh = False
+        try:
+            if quote_unix is not None and dex_id == "pumpswap":
+                age = time.time() - float(quote_unix)
+                fresh = 0 <= age <= max_age
+        except (TypeError, ValueError):
+            fresh = False
+        if not fresh:
+            self._emit(mint, verdict, price, 0, None, "skipped", "stale or untrusted quote")
+            return
         if price <= 0:
             self._emit(mint, verdict, 0, 0, None, "skipped", "no price")
             return
@@ -219,9 +237,9 @@ class Executor:
     async def on_callback(self, data: str):
         if data.startswith("bought:"):
             mint = data.split(":", 1)[1]
-            pending = self._pending_live.pop(mint, None)
-            if pending:
-                await self._fill(pending)
+            self._pending_live.pop(mint, None)
+            self.db.update_signal(mint, "skipped", "telegram Bought is not a fill")
+            return
         elif data.startswith("skip:"):
             mint = data.split(":", 1)[1]
             self._pending_live.pop(mint, None)
