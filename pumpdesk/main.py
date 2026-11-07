@@ -142,6 +142,8 @@ class Desk:
             await self.notifier.send(tc["message"], paper=True)
         self._night_id = self.db.start_night(str(config.get("desk.mode")))
         self.telegram.night_id = self._night_id
+        import nightpolicy
+        nightpolicy.bind_night(self._night_id)
         while True:
             await asyncio.sleep(60)
             bal = self.db.latest_balance()
@@ -163,17 +165,24 @@ class Desk:
         self._lock_handle = handle
 
     async def start(self):
-        self._acquire_process_lock()
-        await self.telegram.start()
-        self._tasks = [
-            asyncio.create_task(self.scanner.run(), name="scanner"),
-            asyncio.create_task(self.auditor.run(), name="auditor"),
-            asyncio.create_task(self.analyst.run(), name="analyst"),
-            asyncio.create_task(self.executor.run(), name="executor"),
-            asyncio.create_task(self.risk.run(), name="risk"),
-            asyncio.create_task(self._balance_ticker(), name="balance"),
-        ]
+        from preflight import assert_runtime
         host = os.environ.get("DESK_HOST", "127.0.0.1")
+        if os.environ.get("DESK_SKIP_PREFLIGHT") != "1":
+            assert_runtime(host, ROOT / ".secrets")
+        self._acquire_process_lock()
+        offline = os.environ.get("DESK_OFFLINE") == "1"
+        if not offline:
+            await self.telegram.start()
+        self._tasks = []
+        if not offline:
+            self._tasks = [
+                asyncio.create_task(self.scanner.run(), name="scanner"),
+                asyncio.create_task(self.auditor.run(), name="auditor"),
+                asyncio.create_task(self.analyst.run(), name="analyst"),
+                asyncio.create_task(self.executor.run(), name="executor"),
+                asyncio.create_task(self.risk.run(), name="risk"),
+                asyncio.create_task(self._balance_ticker(), name="balance"),
+            ]
         port = int(os.environ.get("DESK_PORT", "8787"))
         uvi = uvicorn.Server(
             uvicorn.Config(self.app, host=host, port=port, log_level="info", loop="asyncio", access_log=False)

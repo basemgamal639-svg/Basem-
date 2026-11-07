@@ -59,18 +59,12 @@ class Auditor:
                 await asyncio.sleep(1)
 
     async def _rpc(self, method, params):
-        from rpc_allowlist import pin_resolved_host
+        from pinned_rpc import RpcRefused, post_json
         rpc = str(config.get("desk.rpc_url") or "")
-        ok, _why = pin_resolved_host(rpc)
-        if not ok:
-            log.warning("rpc refused by allowlist")
-            return None
         retries = int(config.get("auditor.retries") or 3)
         for i in range(retries):
             try:
-                r = await self.client.post(
-                    rpc, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-                )
+                r = await post_json(rpc, {"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
                 if r.status_code == 429:
                     await asyncio.sleep(2)
                     continue
@@ -79,6 +73,9 @@ class Auditor:
                     await asyncio.sleep(2)
                     continue
                 return data.get("result")
+            except RpcRefused:
+                log.warning("rpc refused")
+                return None
             except Exception:
                 await asyncio.sleep(2)
         return None
@@ -352,6 +349,7 @@ class Auditor:
             )
             await self.bus.publish_sse("activity", {"kind": "rejected", "mint": mint})
         path = Path(__file__).resolve().parent.parent / "logs" / "auditor.log"
+        path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a") as f:
             f.write(f"{out['ts']} {mint} passed={passed} reason={reason}\n")
 
@@ -503,6 +501,7 @@ class Auditor:
         line = f"{config.now_iso()} {mint} L{n} ok={ok} {value} {ms}ms"
         log.info(line)
         path = Path(__file__).resolve().parent.parent / "logs" / "auditor.log"
+        path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a") as f:
             f.write(line + "\n")
 

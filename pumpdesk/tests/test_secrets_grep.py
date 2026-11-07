@@ -46,7 +46,8 @@ def test_secrets():
             if needle in text:
                 bad.append(f"{path}: {needle}")
     example = (PUMP / ".env.example").read_text()
-    assert "change-me" in example
+    assert "DESK_OWNER_WALLET=" in example
+    assert "APP_TOKEN=" not in example
     assert "6484699796" not in example
     ignore = (ROOT / ".gitignore").read_text()
     assert "pumpdesk/data/" in ignore

@@ -1,4 +1,4 @@
-"""FastAPI JSON + SSE for the iPhone app. Every call needs APP_TOKEN."""
+"""FastAPI JSON + SSE. Owner wallet session only. Shared bearers are rejected."""
 from __future__ import annotations
 
 import asyncio
@@ -116,41 +116,27 @@ def create_app(db, bus, desk=None) -> FastAPI:
     app.state.desk = desk
     app.state.sim = simpreview.SimStore()
 
-    def require_token(
-        authorization: str | None = Header(default=None),
-        x_app_token: str | None = Header(default=None, alias="X-App-Token"),
+    def require_owner(
+        request: Request,
         t: str | None = Query(default=None),
-    ):
-        expected = os.environ.get("APP_TOKEN", "")
-        got = None
-        if x_app_token:
-            got = x_app_token
-        elif authorization and authorization.lower().startswith("bearer "):
-            got = authorization.split(" ", 1)[1].strip()
-        if t:
-            raise HTTPException(status_code=401, detail="query token is not accepted")
-        if not expected or got != expected:
-            raise HTTPException(status_code=401, detail="unauthorized")
-
-    auth = Depends(require_token)
-
-    def require_header(
         x_app_token: str | None = Header(default=None, alias="X-App-Token"),
         authorization: str | None = Header(default=None),
-        t: str | None = Query(default=None),
     ):
-        if t:
-            raise HTTPException(status_code=401, detail="query token is not accepted on this route")
-        expected = os.environ.get("APP_TOKEN", "")
-        got = None
-        if x_app_token:
-            got = x_app_token
-        elif authorization and authorization.lower().startswith("bearer "):
-            got = authorization.split(" ", 1)[1].strip()
-        if not expected or got != expected:
-            raise HTTPException(status_code=401, detail="unauthorized")
+        if t or x_app_token or authorization:
+            raise HTTPException(status_code=401, detail="shared bearer and query token are not accepted")
+        _origin_ok(request)
+        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
+        owner = os.environ.get("DESK_OWNER_WALLET", "").strip()
+        if not row or not owner or row.get("wallet") != owner:
+            raise HTTPException(status_code=401, detail="owner session required")
+        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            if request.headers.get("x-requested-with") != "pumpdesk":
+                raise HTTPException(status_code=403, detail="missing X-Requested-With")
+            if request.headers.get("x-csrf-token") != row.get("csrf"):
+                raise HTTPException(status_code=403, detail="csrf")
+        return row
 
-    header_auth = Depends(require_header)
+    auth = Depends(require_owner)
 
     @app.get("/api/state")
     async def state(_: None = auth):
@@ -446,7 +432,7 @@ def create_app(db, bus, desk=None) -> FastAPI:
         }
 
     @app.get("/health")
-    async def health_detail(_: None = header_auth):
+    async def health_detail(_: None = auth):
         desk_obj = app.state.desk
         return healthmod.build_health(
             db,
@@ -456,7 +442,7 @@ def create_app(db, bus, desk=None) -> FastAPI:
         )
 
     @app.get("/metrics")
-    async def metrics_route(_: None = header_auth):
+    async def metrics_route(_: None = auth):
         snap = METRICS.snapshot()
         for queue in bus.queue_stats():
             snap[f"queue_depth_{queue['name']}"] = int(queue["depth"])
@@ -480,8 +466,9 @@ def create_app(db, bus, desk=None) -> FastAPI:
     def _session(request: Request) -> dict:
         _origin_ok(request)
         row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
-        if not row:
-            raise HTTPException(status_code=401, detail="wallet session required")
+        owner = os.environ.get("DESK_OWNER_WALLET", "").strip()
+        if not row or not owner or row.get("wallet") != owner:
+            raise HTTPException(status_code=401, detail="owner session required")
         return row
 
     def _csrf(request: Request, sess: dict) -> None:
@@ -490,7 +477,7 @@ def create_app(db, bus, desk=None) -> FastAPI:
             raise HTTPException(status_code=403, detail="csrf")
 
     @app.post("/api/session/nonce")
-    async def session_nonce(body: NonceBody, request: Request, _: None = auth):
+    async def session_nonce(body: NonceBody, request: Request):
         _origin_ok(request)
         _require_custom_header(request)
         if not _limiter.allow(request.client.host if request.client else "local"):

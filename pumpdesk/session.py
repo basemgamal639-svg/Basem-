@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -86,6 +87,9 @@ def verify_login(db, wallet: str, cluster: str, nonce: str, signature: bytes, pu
         raise SessionError("expired", "nonce expired")
     if b58decode(wallet) != public_key:
         raise SessionError("wallet", "public key does not match wallet address")
+    owner = os.environ.get("DESK_OWNER_WALLET", "").strip()
+    if not owner or wallet != owner:
+        raise SessionError("owner", "wallet is not the configured owner")
     try:
         Ed25519PublicKey.from_public_bytes(public_key).verify(signature, row["message"].encode("utf-8"))
     except Exception as exc:

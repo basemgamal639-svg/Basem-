@@ -98,9 +98,17 @@ class Executor:
         price = float(dig(dex, "priceUsd") or 0)
         liq = float(dig(dex, "liquidity.usd") or 0)
         quote_unix = dig(dex, "_quote_unix")
+        dex_id = dig(dex, "dexId")
         max_age = float(config.get("executor.max_quote_age_s") or 30)
-        if quote_unix is not None and (time.time() - float(quote_unix)) > max_age:
-            self._emit(mint, verdict, price, 0, None, "skipped", "stale quote")
+        fresh = False
+        try:
+            if quote_unix is not None and dex_id == "pumpswap":
+                age = time.time() - float(quote_unix)
+                fresh = 0 <= age <= max_age
+        except (TypeError, ValueError):
+            fresh = False
+        if not fresh:
+            self._emit(mint, verdict, price, 0, None, "skipped", "stale or untrusted quote")
             return
         if price <= 0:
             self._emit(mint, verdict, 0, 0, None, "skipped", "no price")

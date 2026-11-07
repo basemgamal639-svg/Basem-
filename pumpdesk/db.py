@@ -185,6 +185,25 @@ class DB:
                   body TEXT,
                   status TEXT
                 );
+                CREATE TABLE IF NOT EXISTS settings_quarantine (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  key TEXT,
+                  value TEXT,
+                  reason TEXT,
+                  quarantined_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS night_segments (
+                  night_id INTEGER,
+                  boot_id TEXT,
+                  start_wall REAL,
+                  last_wall REAL,
+                  start_mono REAL,
+                  last_mono REAL,
+                  scans INTEGER,
+                  max_gap_s INTEGER,
+                  broken INTEGER,
+                  PRIMARY KEY (night_id, boot_id)
+                );
                 """
             )
             cur.execute("SELECT version FROM schema_migrations")
@@ -326,6 +345,8 @@ class DB:
                     d.get("name"), d.get("symbol"), d.get("pool"),
                 ),
             )
+        import nightpolicy
+        nightpolicy.note_scan(self)
 
     def recent_scans(self, limit=20) -> list[dict]:
         with self.cursor() as cur:
@@ -607,31 +628,71 @@ class DB:
                 (_utc(), night_id),
             )
 
-    def complete_paper_night(self, night_id: int, who: str) -> tuple[bool, str]:
-        """Operator-only completion. Not implied by process uptime."""
-        who = (who or "").strip()
-        if not who:
-            return False, "who is required"
+    def complete_paper_night(self, night_id: int, owner_wallet: str) -> tuple[bool, str]:
+        """Owner wallet plus observed ingestion. A caller-supplied name is not enough."""
+        import os
+        expected = os.environ.get("DESK_OWNER_WALLET", "").strip()
+        if not expected or owner_wallet != expected:
+            return False, "owner wallet session is required"
+        import nightpolicy
+        ok, msg = nightpolicy.evaluate(self, night_id)
+        if not ok:
+            return False, msg
         with self.cursor() as cur:
-            cur.execute("SELECT id, mode, full FROM nights WHERE id=?", (night_id,))
+            cur.execute("SELECT id, mode FROM nights WHERE id=?", (night_id,))
             row = cur.fetchone()
             if not row:
                 return False, "night not found"
             if str(row["mode"]).upper() != "PAPER":
                 return False, "only a PAPER night can be marked full"
-            started = None
-            cur.execute("SELECT started_at FROM nights WHERE id=?", (night_id,))
-            started = cur.fetchone()["started_at"]
-            if not started:
-                return False, "night has no start time"
-            cur.execute("SELECT COUNT(*) AS c FROM scans WHERE ts>=?", (started,))
-            if int(cur.fetchone()["c"]) < 1:
-                return False, "night has no scans; refusing to mark an empty night full"
             cur.execute(
                 "UPDATE nights SET ended_at=?, full=1 WHERE id=?",
                 (_utc(), night_id),
             )
-        return True, "paper night marked full by explicit operator action"
+        return True, msg
+
+    def night_segment(self, night_id: int, boot_id: str) -> dict | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM night_segments WHERE night_id=? AND boot_id=?",
+                (night_id, boot_id),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def insert_night_segment(self, night_id, boot_id, wall, mono) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO night_segments(night_id,boot_id,start_wall,last_wall,start_mono,last_mono,scans,max_gap_s,broken) "
+                "VALUES(?,?,?,?,?,?,1,0,0)",
+                (night_id, boot_id, wall, wall, mono, mono),
+            )
+
+    def update_night_segment(self, night_id, boot_id, last_wall, last_mono, scans, max_gap, broken) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "UPDATE night_segments SET last_wall=?, last_mono=?, scans=?, max_gap_s=?, broken=? "
+                "WHERE night_id=? AND boot_id=?",
+                (last_wall, last_mono, scans, max_gap, broken, night_id, boot_id),
+            )
+
+    def quarantine_contains(self, key: str, encoded: str) -> bool:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM settings_quarantine WHERE key=? AND value=? LIMIT 1",
+                (key, encoded),
+            ).fetchone()
+            return row is not None
+
+    def add_quarantine(self, key: str, encoded: str, reason: str) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO settings_quarantine(key,value,reason,quarantined_at) VALUES(?,?,?,?)",
+                (key, encoded, reason, _utc()),
+            )
+
+    def delete_setting(self, key: str) -> None:
+        with self.cursor() as cur:
+            cur.execute("DELETE FROM settings WHERE key=?", (key,))
 
     def save_intent(self, row: dict) -> None:
         with self.cursor() as cur:

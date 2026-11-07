@@ -184,13 +184,19 @@ def init(db=None):
     if handle:
         _state["desk.pump_handle"] = handle
     if db is not None:
-        rows = db.all_settings()
+        from settings_guard import quarantine
+        rows = quarantine(db, db.all_settings())
         for k, v in rows.items():
-            _state[k] = _coerce(k, v)
-        # persist defaults missing from db
+            if k in DEFAULTS or k.startswith("desk."):
+                try:
+                    _state[k] = _coerce(k, v)
+                except Exception:
+                    continue
         for k, v in _state.items():
             if k not in rows:
                 db.set_setting(k, v, who="init")
+    owner_wallet = os.environ.get("DESK_OWNER_WALLET", "").strip()
+    _state["desk.owner_wallet"] = owner_wallet
     load_secrets()
     return _state
 

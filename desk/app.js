@@ -12,34 +12,32 @@
   }
 
   function bootToken() {
-    if (onPages()) {
-      state.token = null;
-      try { localStorage.removeItem("desk_app_token"); } catch (e) {}
-      if (location.hash) history.replaceState(null, "", location.pathname + location.search);
-      return;
+    state.token = null;
+    try { localStorage.removeItem("desk_app_token"); } catch (e) {}
+    if (location.hash && /[#&]t=/.test(location.hash)) {
+      history.replaceState(null, "", location.pathname + location.search);
     }
-    const hash = location.hash || '';
-    const m = hash.match(/[#&]t=([^&]+)/);
-    if (m) {
-      state.token = decodeURIComponent(m[1]);
-      try { localStorage.setItem('desk_app_token', state.token); } catch (e) {}
-      history.replaceState(null, '', location.pathname + location.search);
-    } else {
-      try { state.token = localStorage.getItem('desk_app_token'); } catch (e) {}
-    }
+  }
+
+  function csrfToken() {
+    const match = document.cookie.match(/(?:^|; )desk_csrf=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
   }
 
   async function api(path, opts) {
     opts = opts || {};
     const headers = Object.assign({}, opts.headers || {}, {
-      'X-App-Token': state.token || '',
-      'Accept': 'application/json',
+      "Accept": "application/json",
+      "X-Requested-With": "pumpdesk",
     });
+    if ((opts.method || "GET").toUpperCase() !== "GET") {
+      headers["X-CSRF-Token"] = csrfToken();
+    }
     if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
       opts.body = JSON.stringify(opts.body);
     }
-    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    const res = await fetch(path, Object.assign({ credentials: "same-origin" }, opts, { headers }));
     if (res.status === 401) throw new Error('unauthorized');
     if (!res.ok) throw new Error('http ' + res.status);
     state.lastOk = Date.now();
@@ -255,10 +253,11 @@
   }
 
   function bindSSE() {
-    if (!state.token || onPages() || !window.fetch) return;
+    if (onPages() || !window.fetch) return;
     // Header only. A query token is rejected by the API.
     fetch("/api/stream", {
-      headers: { "X-App-Token": state.token, "Accept": "text/event-stream" },
+      credentials: "same-origin",
+      headers: { "Accept": "text/event-stream", "X-Requested-With": "pumpdesk" },
     }).then(function (res) {
       if (!res.ok || !res.body || !res.body.getReader) { setOffline(true, 5); return; }
       const reader = res.body.getReader();
@@ -379,8 +378,9 @@
         signature_hex: Array.from(signed.signature).map(function (b) { return b.toString(16).padStart(2, "0"); }).join(""),
       }),
     });
-    document.getElementById("walletStatus").textContent = verify.ok ? "Signed in with Phantom. Preview only." : "Wallet signature was not accepted.";
+    document.getElementById("walletStatus").textContent = verify.ok ? "Signed in with the owner wallet. Preview only." : "Wallet signature was not accepted.";
     refreshWallet();
+    if (verify.ok) loop();
   }
 
   function init() {
@@ -401,17 +401,14 @@
     };
     refreshWallet();
     document.querySelectorAll('.tabbar button').forEach(b => {
-      b.onclick = () => { showTab(b.dataset.tab); if (state.token && !onPages()) loop(); };
+      b.onclick = () => { showTab(b.dataset.tab); if (!onPages()) loop(); };
     });
-    document.getElementById('avatar').onclick = () => { showTab('account'); if (state.token && !onPages()) loop(); };
+    document.getElementById('avatar').onclick = () => { showTab('account'); if (!onPages()) loop(); };
     if (onPages()) {
       showHost("GitHub Pages is static. The desk API is not on this host, so paper data and wallet login stay disconnected.");
       return;
     }
-    if (!state.token) {
-      showHost("Paper numbers stay blank until this same-origin API accepts the desk token. That token cannot approve a wallet preview.");
-      return;
-    }
+    showHost("Sign in with the configured owner wallet. This page does not keep a shared token.");
     document.getElementById('seeAll').onclick = () => { showTab('activity'); loop(); };
     document.getElementById('ranges').onclick = (e) => {
       const b = e.target.closest('button'); if (!b) return;

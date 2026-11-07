@@ -16,7 +16,7 @@ PAPER still records a simulated fill at the signal price when a coin passes the 
 
 LIVE does not. A Telegram "Bought" tap does not open a position. The unverified live path is fail-closed.
 
-A paper night is marked full only by the explicit operator command `complete night` (or `DB.complete_paper_night`). Process uptime and shutdown call `end_night`, which always leaves `full=0`.
+A paper night is not completed by a chat command or by one scan. `DB.complete_paper_night` requires the configured owner wallet and a continuous observed scan segment: at least six hours of monotonic uptime, no gap longer than 300 seconds, and at least 73 ingested scans in that same boot. Heartbeats do not count. A restart, a clock step, or a gap fails closed. Shutdown calls `end_night` and leaves `full=0`. Tests inject the clock. They are not an overnight run, and they do not enable LIVE.
 
 Broadcast is the constant `BROADCAST_ENABLED = False` in `simpreview.py`. The UI cannot turn it on. Simulated previews are labeled `SIMULATED — NOT AN EXECUTABLE TRANSACTION`.
 
@@ -86,28 +86,30 @@ Telegram, and only from `desk.owner_chat_id` when that id is non-zero:
 - `status`, `buy X`, `sell X`, `why X`
 - `pause` / `resume` plus an agent name
 - `set <name> to <value>`, `stack N`
-- `paper`, and the exact text `LIVE` (still requires one explicitly completed PAPER night; LIVE still does not fill)
-- `complete night` marks the current PAPER night full. Shutdown does not.
+- `paper`. The exact text `LIVE` is refused.
+- `complete night` is refused. Night completion is an owner-wallet action, not a chat command.
 - `invite`, `report` (report text is still a stub)
 
 If `desk.owner_chat_id` is 0, `/start` does not claim ownership.
 
 ## Routes
 
-Legacy routes still accept `X-App-Token`, `Authorization: Bearer`, or `?t=` because the existing phone client uses a query token for Server-Sent Events. New routes refuse `?t=`.
+There is no shared bearer. `X-App-Token`, `Authorization`, and `?t=` are rejected. The owner signs a one-use nonce with the wallet in `DESK_OWNER_WALLET`. The session is an HttpOnly cookie. Mutations also need `X-Requested-With: pumpdesk` and `X-CSRF-Token`.
 
 | Method | Path | Auth | Effect |
 | --- | --- | --- | --- |
 | GET | `/health/live` | none | Process answered. No database write, no network. |
 | GET | `/health/ready` | none | `SELECT 1` on the open database. 503 if that fails. |
-| GET | `/health` | header token | Pipeline clocks, queue depth, poller state, disk. `trading_status=idle` when nothing has been ingested. A 200 here is not "healthy to trade". |
-| GET | `/metrics` | header token | Counters and queue gauges. `broadcast_enabled` is 0. |
-| POST | `/api/sim/preview` | header token | Frozen simulated preview and sha256. Header `Idempotency-Key` optional. |
-| GET | `/api/sim/preview/{id}` | header token | Same preview, or 410 when expired. |
-| POST | `/api/sim/preview/{id}/verify` | header token | ed25519 check of the frozen bytes. No broadcast. |
-| POST | `/api/sim/stop` | header token | Refuses new previews and verification. |
-| GET/POST | `/api/state`, `/api/chart`, `/api/activity`, `/api/coin/{mint}`, `/api/audit/{mint}`, `/api/agents/{name}/decisions`, `/api/account`, `/api/settings`, `/api/mode`, `/api/agents/{name}/pause`, `/api/agents/{name}/resume`, `/api/push`, `/api/stream`, `/api/test-push` | legacy token | Existing PAPER desk. |
-| GET | `/d/` and `/d/{path}` | none | 404. Plan B files are not mounted. |
+| GET | `/health` | owner session | Pipeline clocks, queue depth, poller state, disk. `trading_status=idle` when nothing has been ingested. A 200 here is not "healthy to trade". |
+| GET | `/metrics` | owner session | Counters and queue gauges. `broadcast_enabled` is 0. |
+| POST | `/api/session/nonce` | rate limit and custom header | One-use login nonce. No bearer. |
+| POST | `/api/session/verify` | signature | Sets the session cookie when the wallet is the configured owner. |
+| POST | `/api/sim/preview` | owner session | Frozen simulated preview and sha256. Header `Idempotency-Key` optional. |
+| GET | `/api/sim/preview/{id}` | owner session | Same preview, or 410 when expired. |
+| POST | `/api/sim/preview/{id}/verify` | owner session | ed25519 check of the frozen bytes. No broadcast. |
+| POST | `/api/sim/stop` | owner session | Refuses new previews and verification. |
+| GET/POST | `/api/state`, `/api/chart`, `/api/activity`, `/api/coin/{mint}`, `/api/audit/{mint}`, `/api/agents/{name}/decisions`, `/api/account`, `/api/settings`, `/api/mode`, `/api/agents/{name}/pause`, `/api/agents/{name}/resume`, `/api/push`, `/api/stream`, `/api/test-push` | owner session | Existing PAPER desk. |
+| GET | `/d/` and `/d/{path}` | none | 404. Plan B files are not written or mounted. |
 
 `/health/live` staying 200 while the scanner has seen no migration is expected. Read `trading_status`. `idle` means quiet. `stale` means a dependency clock is old. `ok` means a recent migration was stored and evaluation is not stuck.
 

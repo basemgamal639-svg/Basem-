@@ -188,11 +188,7 @@ class Telegram:
             parts = raw.split(None, 1)
             return await self.on_command(parts[0].lower(), parts[1])
         if low in ("complete night", "/complete_night"):
-            night_id = getattr(self, "night_id", None)
-            if not night_id:
-                return "No open night id is attached to this process."
-            ok, msg = self.db.complete_paper_night(int(night_id), who="telegram-owner")
-            return msg if ok else f"Refuse: {msg}"
+            return "Refuse: night completion requires the owner wallet session, not a chat command."
         if low in ("report", "/report"):
             return "Morning Page not generated yet (routines come later)."
         # unknown

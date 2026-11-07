@@ -66,12 +66,12 @@ class SafetyTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             db.end_night(night, full=True)
         self.assertFalse(db.has_full_paper_night())
-        empty = db.complete_paper_night(night, who="operator-test")
-        self.assertFalse(empty[0])
+        refused = db.complete_paper_night(night, "")
+        self.assertFalse(refused[0])
         db.add_scan({"mint": MINT, "ts": config.now_iso(), "verdict": "pass"})
-        ok, _msg = db.complete_paper_night(night, who="operator-test")
-        self.assertTrue(ok)
-        self.assertTrue(db.has_full_paper_night())
+        still = db.complete_paper_night(night, "not-the-owner")
+        self.assertFalse(still[0])
+        self.assertFalse(db.has_full_paper_night())
 
     def test_live_tap_does_not_open_a_position(self):
         from agents.executor import Executor
@@ -82,7 +82,7 @@ class SafetyTests(unittest.TestCase):
         exe = Executor(db, Bus(), notifier=None)
 
         async def fake_dex(_mint):
-            return {"priceUsd": "1.0", "liquidity": {"usd": 100000}}
+            return {"priceUsd": "1.0", "liquidity": {"usd": 100000}, "dexId": "pumpswap", "_quote_unix": __import__("time").time()}
 
         exe._dex = fake_dex
 
@@ -114,7 +114,7 @@ class SafetyTests(unittest.TestCase):
         exe = Executor(db, Bus(), notifier=Notifier())
 
         async def fake_dex(_mint):
-            return {"priceUsd": "1.0", "liquidity": {"usd": 1000000}}
+            return {"priceUsd": "1.0", "liquidity": {"usd": 1000000}, "dexId": "pumpswap", "_quote_unix": __import__("time").time()}
 
         exe._dex = fake_dex
 
@@ -131,6 +131,32 @@ class SafetyTests(unittest.TestCase):
         asyncio.run(run())
         self.assertIsNotNone(db.get_position(MINT))
         self.assertEqual(db.get_position(MINT)["mode"], "PAPER")
+
+    def test_missing_quote_timestamp_does_not_fill(self):
+        from agents.executor import Executor
+        from bus import Bus
+
+        db = _db()
+        config._state["desk.mode"] = "PAPER"
+        exe = Executor(db, Bus(), notifier=None)
+
+        async def fake_dex(_mint):
+            return {"priceUsd": "1.0", "liquidity": {"usd": 1000000}, "dexId": "pumpswap"}
+
+        exe._dex = fake_dex
+
+        async def run():
+            await exe._handle({
+                "mint": MINT,
+                "name": "Example",
+                "symbol": "EX",
+                "score": 90,
+                "scanner": {"liquidityUsd": 1000000},
+                "dex": {"priceUsd": "1.0"},
+            })
+
+        asyncio.run(run())
+        self.assertIsNone(db.get_position(MINT))
 
     def test_empty_owner_does_not_claim_start(self):
         db = _db()
@@ -183,12 +209,10 @@ class HealthTests(unittest.TestCase):
         self.assertEqual(db.pipeline_timestamps(), before)
         self.assertEqual(client.get("/health").status_code, 401)
         self.assertEqual(client.get("/health?t=dummy-test-token").status_code, 401)
-        ok = client.get("/health", headers={"X-App-Token": "dummy-test-token"})
-        self.assertEqual(ok.status_code, 200)
-        self.assertEqual(ok.json()["trading_status"], "idle")
-        metrics = client.get("/metrics", headers={"X-App-Token": "dummy-test-token"})
-        self.assertEqual(metrics.status_code, 200)
-        self.assertEqual(metrics.json()["broadcast_enabled"], 0)
+        blocked = client.get("/health", headers={"X-App-Token": "dummy-test-token"})
+        self.assertEqual(blocked.status_code, 401)
+        metrics = client.get("/metrics", headers={"Authorization": "Bearer dummy-test-token"})
+        self.assertEqual(metrics.status_code, 401)
 
     def test_queue_drop_is_counted(self):
         queue = BoundedQueue("auditor", maxsize=1)

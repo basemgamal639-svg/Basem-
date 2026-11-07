@@ -154,6 +154,7 @@ class UpgradeTests(unittest.TestCase):
         key = Ed25519PrivateKey.generate()
         public = key.public_key().public_bytes_raw()
         wallet = b58encode(public)
+        os.environ["DESK_OWNER_WALLET"] = wallet
         self.assertEqual(b58decode(wallet), public)
         issued = issue_nonce(db, wallet, "devnet", "testserver")
         signature = key.sign(issued["message"].encode())
@@ -226,7 +227,7 @@ class UpgradeTests(unittest.TestCase):
         config.init()
         db = _db()
         client = TestClient(create_app(db, Bus(), desk=None))
-        self.assertEqual(client.post("/api/mode", json={"mode": "LIVE", "confirm": "LIVE"}, headers={"X-App-Token": "dummy-test-token"}).status_code, 403)
+        self.assertEqual(client.post("/api/mode", json={"mode": "LIVE", "confirm": "LIVE"}, headers={"X-App-Token": "dummy-test-token"}).status_code, 401)
         denied = client.post(
             "/api/sim/preview",
             json={
@@ -249,10 +250,11 @@ class UpgradeTests(unittest.TestCase):
         key = Ed25519PrivateKey.generate()
         public = key.public_key().public_bytes_raw()
         wallet = b58encode(public)
+        os.environ["DESK_OWNER_WALLET"] = wallet
         nonce = client.post(
             "/api/session/nonce",
             json={"wallet": wallet, "cluster": "devnet"},
-            headers={"X-Requested-With": "pumpdesk", "X-App-Token": "dummy-test-token"},
+            headers={"X-Requested-With": "pumpdesk"},
         )
         self.assertEqual(nonce.status_code, 200, nonce.text)
         csrf = nonce.cookies.get("desk_csrf")
