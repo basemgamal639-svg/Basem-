@@ -78,16 +78,17 @@ export const LABELS: Record<string, string> = {
 export const label = (k: string) => LABELS[k] || k;
 
 // Default commercial configuration. Admins override any part of it via PlatformSetting key "pricing".
-// Prices are suggestions to test, in CAD cents, before 13% Ontario HST.
+// Prices are suggestions to test, in CAD cents, before 13% Ontario HST. Anchored against the Montréal
+// reference (StaffMTL, $14.99/post in Nov 2026) — see docs/competitor-analysis.md.
 export const DEFAULT_PRICING = {
   currency: "CAD",
   tax_rate: 0.13,
   tax_label: "HST (ON 13%)",
   products: {
-    single_job: { name: "Single job post", price_cents: 7900, duration_days: 30, kind: "one_time" },
-    featured_upgrade: { name: "Featured upgrade (14 days)", price_cents: 2900, duration_days: 14, kind: "one_time" },
-    pro_monthly: { name: "Pro — monthly", price_cents: 19900, plan: "pro", kind: "subscription" },
-    premium_monthly: { name: "Premium — monthly", price_cents: 39900, plan: "premium", kind: "subscription" },
+    single_job: { name: "Single job post", price_cents: 1999, duration_days: 30, kind: "one_time" },
+    featured_upgrade: { name: "Featured upgrade (14 days)", price_cents: 999, duration_days: 14, kind: "one_time" },
+    pro_monthly: { name: "Pro — monthly", price_cents: 7900, plan: "pro", kind: "subscription" },
+    premium_monthly: { name: "Premium — monthly", price_cents: 14900, plan: "premium", kind: "subscription" },
   },
   plans: {
     free: { name: "Free", active_jobs: 0, featured_per_month: 0, job_duration_days: 30, ai_screening: false, analytics: false, multi_location: false, priority: 0 },

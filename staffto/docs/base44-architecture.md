@@ -100,6 +100,6 @@ Then, in the Base44 dashboard:
 | `npm run dev` | Vite dev server against a Base44 backend (`base44 dev` or `VITE_BASE44_APP_BASE_URL`) |
 | `npm run serve:local` | Builds and serves the app with `test/local-backend` on :4400 (offline, in-memory data) |
 | `npm test` | Unit tests (AI rubric, pay rules, HST quote, Stripe signatures, sitemap, schema/RLS presence, shared-code drift) |
-| `npm run build:local && npm run e2e` | 34-check end-to-end QA in Chromium (see `launch-checklist.md`) |
+| `npm run build:local && npm run e2e` | 34-check end-to-end QA (now including the language filter) in Chromium (see `launch-checklist.md`) |
 
 `test/local-backend/server.mjs` implements the Base44 REST routes the SDK calls (auth, entities with RLS/FLS/validation, functions, Core uploads and signed URLs). It mirrors the semantics of Base44's own local dev server and runs the real entity files and function code. It is test infrastructure only and is never deployed. `InvokeLLM` and `ExtractDataFromUploadedFile` are deliberately unavailable locally, which also exercises the AI rules-only fallback.

@@ -10,6 +10,7 @@ import { useSession } from '@/lib/session';
 import { CATEGORIES, EMPLOYMENT_TYPES, LOCATIONS, label } from '@/lib/constants';
 import { SEO_PAGES } from '@/pages/seoPages';
 
+const LANGUAGES = ['English', 'French', 'Spanish', 'Portuguese', 'Tagalog', 'Punjabi', 'Mandarin', 'Cantonese', 'Tamil', 'Italian', 'Korean', 'Arabic'];
 const hourly = (j) => (j.salary_period === 'year' ? (j.salary_max || j.salary_min) / 2080 : (j.salary_max || j.salary_min));
 
 export function filterJobs(jobs, f) {
@@ -19,6 +20,7 @@ export function filterJobs(jobs, f) {
     if (f.locations?.length && !f.locations.includes(j.location)) return false;
     if (f.types?.length && !f.types.includes(j.employment_type)) return false;
     if (f.min_pay && hourly(j) < Number(f.min_pay)) return false;
+    if (f.language && !(j.languages || []).some((l) => l.toLowerCase() === f.language.toLowerCase())) return false;
     if (q && !`${j.title} ${j.employer_name} ${label(j.category)} ${(j.skills || []).join(' ')} ${j.description || ''}`.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -57,6 +59,7 @@ export function JobBoard({ preset = {}, heading, intro, seo }) {
     locations: list('location').length ? list('location') : preset.locations || [],
     types: list('type'),
     min_pay: params.get('min_pay') || '',
+    language: params.get('language') || '',
     sort: params.get('sort') || 'recent',
   };
   const [q, setQ] = useState(f.q);
@@ -72,7 +75,7 @@ export function JobBoard({ preset = {}, heading, intro, seo }) {
   const { data: jobs, loading, error } = useAsync(() => db.Job.filter({ status: 'active' }, '-published_at', 1000), []);
   const results = useMemo(() => filterJobs(jobs || [], { ...f, q: dq }), [jobs, params.toString(), dq]);
   const { ids, toggle } = useSavedJobs();
-  const active = f.categories.length + f.locations.length + f.types.length + (f.min_pay ? 1 : 0);
+  const active = f.categories.length + f.locations.length + f.types.length + (f.min_pay ? 1 : 0) + (f.language ? 1 : 0);
 
   useSeo(seo || {
     title: f.categories.length === 1 ? `${label(f.categories[0])} Jobs in ${f.locations.length === 1 ? label(f.locations[0]) : 'Toronto'}` : f.locations.length === 1 ? `Hospitality Jobs in ${label(f.locations[0])}` : 'Hospitality Jobs in Toronto & the GTA',
@@ -87,6 +90,9 @@ export function JobBoard({ preset = {}, heading, intro, seo }) {
       <Field label="Employment type"><ChipSelect name="Employment type" options={EMPLOYMENT_TYPES} value={f.types} onChange={(v) => set('type', v)} /></Field>
       <Field label="Minimum pay (hourly equivalent)">
         <Select value={f.min_pay} onChange={(e) => set('min_pay', e.target.value)} placeholder="Any pay" options={[18, 20, 22, 25, 30, 35].map((v) => ({ value: String(v), label: `$${v}+/hr` }))} />
+      </Field>
+      <Field label="Working language">
+        <Select value={f.language} onChange={(e) => set('language', e.target.value)} placeholder="Any language" options={LANGUAGES.map((l) => ({ value: l, label: l }))} />
       </Field>
       {active > 0 && <Button variant="link" onClick={() => setParams(new URLSearchParams(f.q ? { q: f.q } : {}))}>Clear filters</Button>}
     </div>

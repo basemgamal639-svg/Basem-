@@ -176,6 +176,10 @@ try {
     await sp.waitForSelector('text=Line Cook — Brunch');
     await sp.goto(`${BASE}/jobs?category=bartender`);
     await sp.waitForSelector('text=No matching jobs right now');
+    await sp.goto(`${BASE}/jobs?language=French`);
+    await sp.waitForSelector('text=No matching jobs right now');
+    await sp.goto(`${BASE}/jobs?language=English`);
+    await sp.waitForSelector('text=Line Cook — Brunch');
     await sp.goto(`${BASE}/jobs?min_pay=30`);
     await sp.waitForSelector('text=No matching jobs right now');
     await sp.goto(`${BASE}/jobs`);

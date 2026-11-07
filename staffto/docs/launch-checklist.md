@@ -63,3 +63,10 @@
 - Rate limiting on public `site.track` / `contact` relies on platform defaults; add per-IP throttling if abused
 - French UI (optional for GTA reach)
 - Email digests (weekly job alerts) need a scheduled function + CASL-filtered list
+
+## D. Competitive roadmap (from the StaffMTL review, Nov 7 2026)
+
+1. Shift- and date-based temporary jobs + "Today / Tomorrow / Weekend" filter + seeker availability matching
+2. Map view (OpenStreetMap; geocode employer addresses)
+3. Ontario contract templates as a sign-up incentive (lawyer-reviewed)
+4. "Promo post" product for business and event announcements in StaffTO's own channels

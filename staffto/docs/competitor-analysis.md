@@ -1,96 +1,116 @@
-# Competitor analysis — StaffMTL (reference) vs. StaffTO
+# Competitor analysis — StaffMTL vs. StaffTO
 
-_Prepared November 6, 2026._
+_Observed November 7, 2026 by crawling staffmtl.ca (EN) with a headless browser and reading its two public PDF guides. Every figure below is what StaffMTL itself publishes; nothing was independently verified._
 
-## 0. Research limitations
+## 0. Scope and limitations
 
-Read this before relying on the rest of the document.
+| Source | Status |
+|---|---|
+| staffmtl.ca — home, jobs list, job page, post-a-job (step 1), map, classifieds, classified page, reviews, contract templates, login/sign-up, terms, privacy | ✅ Read |
+| "StaffMTL pour les employeurs" and "…pour les chercheurs" PDFs | ✅ Read |
+| Employer dashboard, job-seeker dashboard, apply flow, payment flow | ❌ Behind login; I did not create accounts on a competitor's live service |
+| Facebook groups ([Staff de Bar & Resto Montréal](https://www.facebook.com/groups/SBRMTL/), [Québec](https://www.facebook.com/groups/staffquebec)) | ❌ Facebook requires login. Member count and engagement were **not** observed. The 176,500 figure below is StaffMTL's own claim. |
+| Images | Most photos came from a third-party CDN that didn't load in the crawler, so screenshots show empty image slots. That isn't evidence of broken images for real visitors. |
 
-| Source | Status | Detail |
+The Facebook link in the brief (`share/g/1E27TFY9dc`) is very likely one of StaffMTL's own groups. StaffTO deliberately does **not** link to it; set your own group URL in Admin → Settings → Community.
+
+**Owner:** Autoroute Santé Inc. (Montréal). The terms are in French, which is the official version, with an English courtesy translation.
+
+## 1. What the site does
+
+**Navigation:** Venues · Jobs · Map · Classifieds · Login · **Post a job** (black pill) · FR/EN.
+
+**Homepage**, top to bottom:
+1. "Who's hiring right now in Quebec." with a live job count ("192 jobs right now").
+2. A **venues-first grid**: dark cards per restaurant with neighbourhood and pay chips ("Cook 19 $+", "Sous-chef 70,000 $/yr+"), "N JOBS" badges and "New job · today".
+3. How it works, in two columns: job seekers (find by map or search → apply in 2 clicks → track and chat) and hiring (post in 2 minutes, one price → share on Facebook → applications **sorted by AI: score, strengths, gaps**).
+4. Social proof: "176,500 members of the Staff de Bar & Resto groups · 192 active jobs · 1 classified", plus 3 five-star reviews.
+5. "Clear the kitchen": a classifieds preview.
+6. Footer: About, Resources (contract templates, reviews, employer and seeker PDFs, contact), FB groups, Legal.
+
+**Jobs list (`/offres`)**
+- Date filter for shifts: Any day / Today / Tomorrow / This weekend / Pick dates.
+- Contract (temporary, permanent, full-time, part-time, on-call, seasonal) and 16 roles.
+- Area, minimum pay ($15–25/h) and **language** (French / English / bilingual).
+- "Sign in to see the shifts you're free for" — availability matching.
+- About 20 per page with pagination; a "By city" section.
+
+**Job page**
+- Breadcrumb, venue, address, title, then a facts strip: contract, schedule, tips, language.
+- Details table, description, venue photos, ref code, "Report this listing".
+- Sticky pay card with **Apply**, Email, Save, Share.
+- OpenStreetMap map and similar jobs.
+
+**Posting flow (`/publier`)**
+- Five steps: job → photo → schedule → pay → contact, with a live preview.
+- Product choice: **Job offer $14.99/listing (30 days)**, Job search (worker ad) free, **Business promo from $30**, **Event promo from $30**; equipment goes to classifieds.
+- Prices exclude GST/QST.
+- The employer PDF advertises a launch offer: unlimited free posting for 2 weeks, then **$2.99/offer**. This conflicts with the $14.99 on the site, so the PDF is probably out of date.
+
+**Other**
+- Map page (Leaflet with clustered counts).
+- Classifieds: free, with categories equipment, furniture, business for sale and other. Only 1 active listing.
+- Reviews page: 4 reviews, all 5★.
+- **Contract templates**: free with an account, Quebec employment, event, rental, service-provider and policy templates in PDF and Word.
+- Email/password auth.
+- The terms describe StaffMTL as "solely a publication intermediary … not a placement agency".
+
+**Design:** Geist sans throughout, white and warm-grey background, black pill buttons, large-radius cards, dark venue cards with monospace pay chips. Clean, modern and minimal.
+
+## 2. Business model
+
+| | StaffMTL (observed) |
+|---|---|
+| Core revenue | Pay-per-post, $14.99 per 30 days (plus GST/QST) |
+| Other revenue | Business and event promos (from $30) pushed to the Facebook groups |
+| Free | Job seekers; worker "job search" ads; classifieds; contract templates |
+| Distribution | Paid posts are relayed into their two Facebook groups (the terms grant a licence to "diffuse … through the Facebook group") |
+| Positioning | "Publication intermediary", not a placement agency |
+| Multi-venue | One account manages several venues (employer PDF) |
+| AI | Applicants scored out of 100, with strengths and gaps |
+
+## 3. Acquisition and conversion
+
+- **Supply engine:** the Facebook groups. Every paid listing is also a group post, and the site sells *reach into the group*.
+- **Employer conversion:** one low price ($14.99), a 2-minute structured form with a preview, a "share on Facebook" step, and AI sorting as a premium-feeling feature that's included.
+- **Seeker acquisition:** group posts link to the site; "apply in 2 clicks"; a map; "response ~3 h" (their claim).
+- **Retention hooks:** messaging, application tracking ("see who viewed you"), contract templates behind sign-up, reviews.
+
+## 4. Strengths
+
+1. A huge, already-owned audience (claimed 176.5k) — the moat.
+2. Very low price, so very low friction for independent restaurants.
+3. Shift and date-based temporary jobs plus availability matching: a real hospitality need (last-minute shifts).
+4. Map discovery, language filter, bilingual.
+5. Clean, fast, modern UI with structured listings.
+6. Useful extras: contract templates, promos for events.
+
+## 5. Weaknesses and risks
+
+1. **Classified sellers' email addresses are shown publicly** on listing pages. That invites scraping and spam, and is a privacy issue. (StaffTO: buyer→seller messaging on the platform; no emails shown.)
+2. Thin classifieds (1 listing) and few reviews (4), so the secondary marketplace and social proof are weak.
+3. Headline social proof is **Facebook group membership**, not platform usage; it depends on Meta (the terms acknowledge reliance on third parties).
+4. Pay shows "From X $" with many minimum-wage tipped postings (13.30 $/h, Quebec's tipped minimum). Quebec context, but it frames the board around minimum pay.
+5. AI scoring without visible consent or explanation on the public site. In Ontario, AI use in screening must be disclosed in postings (ESA 2026), and Human Rights Code exposure makes explainability important.
+6. Generic stock "illustration photos" when the venue has no photo.
+7. Pricing inconsistency between the PDF ($2.99) and the site ($14.99).
+8. Quebec-only; nothing in Ontario.
+
+## 6. What StaffTO changes as a result
+
+| Finding | StaffTO response | Status |
 |---|---|---|
-| `https://staffmtl.ca/en` (all pages) | **Not accessible** | The build environment's network policy blocks `staffmtl.ca` (DNS resolution refused by the sandbox proxy). No page was loaded. |
-| Facebook group `facebook.com/share/g/1E27TFY9dc` | **Not accessible** | `www.facebook.com` is blocked the same way. Facebook groups also usually require a logged-in account. |
-| Web search for "StaffMTL" | **No results** | A general web search returned no pages from or about staffmtl.ca. |
+| $14.99/post anchors the market | Default prices lowered to **Single $19.99 · Featured $9.99 · Pro $79/mo · Premium $149/mo** (all editable in Admin → Settings → Pricing). Launch with 100%-off codes. | ✅ Done (this update) |
+| Language filter matters in a multilingual city | Language filter added to job search | ✅ Done |
+| Email exposure in classifieds | Already platform messaging only | ✅ Built |
+| AI scoring without transparency | Consent per application, rubric with reasons, Ontario disclosure | ✅ Built |
+| Shift / date-based temp jobs, "free for" matching | Add `shift_dates` to Job + "Today / Tomorrow / Weekend" filter + seeker availability calendar | 🔜 Roadmap #1 |
+| Map discovery | Add Leaflet/OpenStreetMap map view (needs geocoding of addresses) | 🔜 Roadmap #2 |
+| Contract templates as sign-up incentive | Ontario templates (ESA-aligned employment offer, event, tip-pool policy) — lawyer-reviewed first | 🔜 Roadmap #3 |
+| Business / event promos (from $30) | Add "Promo post" product (shared to StaffTO's own group and page only) | 🔜 Roadmap #4 |
+| Group audience is their moat | Build StaffTO's own Toronto group (see marketing strategy). Never copy or scrape theirs. | Owner action |
+| Venues-first homepage | Consider a "Venues hiring" grid when there are 10+ employers | Optional |
 
-So this document does **not** contain StaffMTL's navigation, page layout, typography, colours, pricing, membership numbers, engagement rates or marketing performance. None of those were observed, and none are invented here.
+## 7. Positioning in one line
 
-What it does contain:
-1. The business model the brief describes: a community-driven hospitality job board with employer-paid postings, classifieds, and a Facebook group as its acquisition engine. It is analysed as a **category**, using common, publicly known patterns for city-level hospitality job boards and Facebook job groups.
-2. How StaffTO is designed to beat that model in Toronto.
-3. A checklist for finishing the competitive teardown once access is available.
-
-**To complete the analysis, please provide:**
-- Screenshots (desktop and mobile) of staffmtl.ca: home, job list, a job page, employer sign-up, the job-posting flow, the pricing/checkout pages, the employer and job seeker dashboards, the FAQ, contact and classifieds.
-- Pricing pages, or any invoice or receipt you hold.
-- Facebook group screenshots: the About tab (member count, rules, admins), 10–20 recent posts (job posts and their format), and post engagement.
-- Or allow `staffmtl.ca` and `www.facebook.com` in the Claude Code environment's network settings, and the teardown can be re-run.
-
-## 1. Business model (as described in the brief)
-
-| Element | Model |
-|---|---|
-| Two-sided marketplace | Hospitality employers ⇄ hospitality workers in one metro area |
-| Who pays | Employers (job posts, upgrades); workers free |
-| Supply engine | A large city Facebook group where jobs are re-posted and shared |
-| Secondary marketplace | Classifieds for equipment and supplies |
-| Language | Bilingual EN/FR in Montréal (StaffTO: English-first, multilingual-friendly) |
-
-## 2. Revenue opportunities (category-level)
-
-1. **Pay-per-post** — the lowest-friction way in for independent restaurants.
-2. **Subscriptions** — for groups and hotels that hire continuously.
-3. **Featured placement and boosts** — high margin, impulse purchase.
-4. **Sponsored community posts** — "Hiring" posts pinned in the group (must respect the group's own rules and Meta's policies).
-5. **Classifieds upsells** — featured equipment listings, and fees for business-for-sale listings.
-6. **Data products later** — aggregated pay benchmarks ("salary guide") as a lead magnet. Sold only as aggregates, never personal data.
-7. **Partnerships** — POS, scheduling and payroll vendors, food-safety and Smart Serve trainers, and suppliers (referral fees, sponsorship).
-
-StaffTO implements 1–3 and 5 (as free listings for now), with configurable pricing. Items 4, 6 and 7 are in the marketing strategy.
-
-## 3. Customer acquisition (category pattern)
-
-- **Workers:** come mostly from the Facebook group, word of mouth in kitchens, and Google searches like "line cook jobs Toronto".
-- **Employers:** start by posting free in the group. A board converts them by offering reach plus a better inbox than DMs.
-- **Typical conversion mechanics:** "post a job" in the main nav, a fast first post, social proof (group size), and urgency (patio season, holidays).
-
-## 4. Strengths of the model
-
-- Community trust and habit: workers already check the group daily.
-- Very low customer-acquisition cost on both sides.
-- Simple product for employers who aren't technical.
-
-## 5. Weaknesses typical of Facebook-group-led job boards
-
-These are the attack surface StaffTO is built around.
-
-| Weakness | StaffTO answer |
-|---|---|
-| Group posts get buried; no search or filter | Real search: role, area, pay, type, keyword; SEO landing pages |
-| Jobs without pay ("DM me") | Pay is **required** on every posting, validated server-side, with an hourly floor at the Ontario minimum wage |
-| Scams and fake jobs in groups | Report button on every listing, moderation queue, verified-employer badge, auto-hide after repeated reports on classifieds |
-| Applications arrive by DM or email: chaos for owners | Applicant pipeline, notes, ratings, messaging, secure resume links |
-| No status updates for workers | Status tracking and notifications; polite automatic "not selected" message |
-| Owner of the group controls distribution | StaffTO owns the board, the SEO and the email list (with CASL consent); Facebook is one channel |
-| Little compliance help | Ontario 2026 job-posting fields (pay range cap, vacancy status, AI disclosure), "no Canadian experience" check |
-
-## 6. Toronto opportunity
-
-- **Market size:** the Toronto CMA is roughly twice Montréal's population, with a very large restaurant and bar sector and a large GTA suburban ring (Mississauga, Brampton, Markham, Vaughan, Richmond Hill). Get current counts from Statistics Canada (Business Counts, NAICS 722) before quoting figures in a pitch deck.
-- **Fragmented competition:** generalist boards (Indeed, Job Bank, Workopolis), restaurant-specific apps, and many informal Facebook groups. None is clearly *the* Toronto hospitality community.
-- **2026 regulatory shift:** Ontario's new job-posting rules (pay ranges, AI disclosure, vacancy status) create a reason for employers to use a tool that gets postings right.
-
-## 7. How StaffTO outperforms
-
-1. **Pay transparency as the brand promise.** "Pay on every listing. Free for workers. Ever."
-2. **Share kit as a growth loop.** Every published job produces a Facebook-ready post and image with UTM links. Owners bring their own networks, and the traffic is measured.
-3. **Better hiring inbox** than DMs: pipeline, messaging, resumes, plus AI-assisted organisation on Premium (advisory, consent-based).
-4. **Local SEO** for role × Toronto queries the groups can't rank for.
-5. **Trust and safety** that groups can't offer: verified employers, reports, moderation, audit log.
-6. **GTA coverage**, not just downtown.
-
-## 8. Open questions to settle with real StaffMTL data
-
-- Pricing points and how often employers post again
-- Size and engagement of the group, and the share of traffic that comes from it
-- Whether StaffMTL posts on behalf of employers (as a recruiter) — this matters for Ontario licensing analysis if you copy the same service
-- Whether employers can see workers' profiles without an application (a talent-database model)
+StaffMTL sells **reach into a Facebook group**. StaffTO sells **a better way to hire in Toronto**: pay-transparent, Ontario-compliant, explainable AI, safer classifieds. It builds its own community rather than renting one.
