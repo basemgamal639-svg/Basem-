@@ -1,0 +1,535 @@
+"""FastAPI JSON + SSE for the iPhone app. Every call needs APP_TOKEN."""
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+import config
+import health as healthmod
+import simpreview
+from links import SIGNUP_URL, coin_url, profile_url
+from metrics import METRICS
+
+WEB = Path(__file__).resolve().parent / "web"
+
+
+def create_app(db, bus, desk=None) -> FastAPI:
+    app = FastAPI(title="Pump Desk")
+    app.state.db = db
+    app.state.bus = bus
+    app.state.desk = desk
+    app.state.sim = simpreview.SimStore()
+
+    def require_token(
+        authorization: str | None = Header(default=None),
+        x_app_token: str | None = Header(default=None, alias="X-App-Token"),
+        t: str | None = Query(default=None),
+    ):
+        expected = os.environ.get("APP_TOKEN", "")
+        got = None
+        if x_app_token:
+            got = x_app_token
+        elif authorization and authorization.lower().startswith("bearer "):
+            got = authorization.split(" ", 1)[1].strip()
+        elif t:
+            got = t
+        if not expected or got != expected:
+            raise HTTPException(status_code=401, detail="unauthorized")
+
+    auth = Depends(require_token)
+
+    def require_header(
+        x_app_token: str | None = Header(default=None, alias="X-App-Token"),
+        authorization: str | None = Header(default=None),
+        t: str | None = Query(default=None),
+    ):
+        if t:
+            raise HTTPException(status_code=401, detail="query token is not accepted on this route")
+        expected = os.environ.get("APP_TOKEN", "")
+        got = None
+        if x_app_token:
+            got = x_app_token
+        elif authorization and authorization.lower().startswith("bearer "):
+            got = authorization.split(" ", 1)[1].strip()
+        if not expected or got != expected:
+            raise HTTPException(status_code=401, detail="unauthorized")
+
+    header_auth = Depends(require_header)
+
+    @app.get("/api/state")
+    async def state(_: None = auth):
+        bal = db.latest_balance()
+        if bal is None:
+            bal = float(config.get("desk.paper_start_stack"))
+        start = float(config.get("desk.paper_start_stack"))
+        # today % from first balance of calendar day
+        rows = db.balances()
+        today_start = start
+        if rows:
+            today_start = float(rows[0]["value"])
+        pct = ((bal / today_start) - 1) * 100 if today_start else 0
+        mult = bal / today_start if today_start else 1
+        mode = config.get("desk.mode")
+        cards = _agent_cards(db)
+        return {
+            "balance": round(bal, 2),
+            "todayPct": round(pct, 2),
+            "multiplier": round(mult, 2),
+            "mode": mode,
+            "agents": cards,
+            "paused": config.paused_agents(),
+            "ts": config.now_iso(),
+        }
+
+    @app.get("/api/chart")
+    async def chart(range: str = "LIVE", _: None = auth):
+        since = _range_since(range)
+        points = db.balances(since=since)
+        marks = []
+        for a in db.activity(limit=50):
+            if a["kind"] in ("bought", "sold", "stopped"):
+                marks.append(
+                    {
+                        "ts": a["ts"],
+                        "kind": a["kind"],
+                        "label": a["title"],
+                        "value": a["value"],
+                        "mint": a["mint"],
+                    }
+                )
+        return {
+            "range": range,
+            "points": [{"ts": p["ts"], "value": p["value"]} for p in points],
+            "marks": marks,
+        }
+
+    @app.get("/api/activity")
+    async def activity(before: int | None = None, _: None = auth):
+        rows = db.activity(before_id=before, limit=30)
+        out = []
+        for r in rows:
+            out.append(
+                {
+                    "id": r["id"],
+                    "ts": r["ts"],
+                    "kind": r["kind"],
+                    "mint": r["mint"],
+                    "agent": r["agent"],
+                    "title": r["title"],
+                    "subtitle": r["subtitle"],
+                    "value": r["value"],
+                    "coin_url": coin_url(r["mint"]) if r.get("mint") else None,
+                }
+            )
+        return {"rows": out}
+
+    @app.get("/api/coin/{mint}")
+    async def coin(mint: str, _: None = auth):
+        c = db.get_coin(mint) or {"mint": mint}
+        prices = db.prices(mint)
+        candles = _ohlc(prices)
+        pos = db.get_position(mint)
+        audit = db.get_audit(mint)
+        exit_line = None
+        if pos:
+            if pos.get("trail_active"):
+                exit_line = float(pos["peak_price"]) * (
+                    1 - float(pos.get("trail_pct") or config.get("risk.trail_pct")) / 100
+                )
+            else:
+                exit_line = float(pos.get("stop_price") or 0)
+        last = prices[-1] if prices else None
+        return {
+            "mint": mint,
+            "name": c.get("name"),
+            "symbol": c.get("symbol"),
+            "pool": c.get("pool"),
+            "price": last["price"] if last else None,
+            "candles": candles,
+            "holders": c.get("holders"),
+            "position": pos,
+            "exitLine": exit_line,
+            "auditLayers": (audit or {}).get("layers"),
+            "coin_url": coin_url(mint, "solana"),
+            "migrated_at": c.get("migrated_at"),
+        }
+
+    @app.get("/api/audit/{mint}")
+    async def audit(mint: str, _: None = auth):
+        a = db.get_audit(mint)
+        if not a:
+            return {"mint": mint, "layers": [], "passed": None}
+        return a
+
+    @app.get("/api/agents/{name}/decisions")
+    async def decisions(name: str, _: None = auth):
+        name = name.lower()
+        if name == "scanner":
+            rows = db.recent_scans(20)
+        elif name == "auditor":
+            rows = db.recent_audits(20)
+        elif name == "analyst":
+            rows = db.recent_verdicts(20)
+        elif name == "executor":
+            rows = db.recent_signals(20)
+        elif name == "risk":
+            rows = [
+                dict(p)
+                for p in db.open_positions()
+            ]
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT * FROM positions WHERE status='closed' ORDER BY id DESC LIMIT 20"
+                )
+                rows = [dict(r) for r in cur.fetchall()] + rows
+        else:
+            rows = []
+        # attach coin_url where mint present
+        for r in rows:
+            if isinstance(r, dict) and r.get("mint"):
+                r["coin_url"] = coin_url(r["mint"])
+        return {"agent": name, "decisions": rows[:20]}
+
+    @app.get("/api/account")
+    async def account(_: None = auth):
+        handle = config.get("desk.pump_handle") or ""
+        return {
+            "mode": config.get("desk.mode"),
+            "stack": config.current_stack(),
+            "paper_start_stack": config.get("desk.paper_start_stack"),
+            "live_stack": config.get("desk.live_stack"),
+            "profile_url": profile_url(handle),
+            "pump_handle": handle,
+            "signup_url": SIGNUP_URL,
+            "invite_url": SIGNUP_URL,
+            "telegram": bool(os.environ.get("TG_TOKEN")),
+            "owner": config.get("desk.owner_telegram_username"),
+            "vapid_public_key": os.environ.get("VAPID_PUBLIC_KEY", ""),
+            "ticket": config.ticket_check(),
+            "has_full_paper_night": db.has_full_paper_night(),
+        }
+
+    @app.get("/api/settings")
+    async def get_settings(_: None = auth):
+        s = config.all_settings()
+        # strip internal
+        return {k: v for k, v in s.items() if not k.startswith("desk._")}
+
+    class SettingsBody(BaseModel):
+        settings: dict[str, Any]
+
+    @app.post("/api/settings")
+    async def post_settings(body: SettingsBody, _: None = auth):
+        results = {}
+        for k, v in body.settings.items():
+            ok, msg = config.set_setting(k, v, who="app", db=db)
+            results[k] = {"ok": ok, "msg": msg}
+        return {"results": results, "ticket": config.ticket_check()}
+
+    @app.post("/api/agents/{name}/pause")
+    async def pause(name: str, _: None = auth):
+        if name.lower() == "risk" and db.open_positions():
+            raise HTTPException(400, "Can't pause Risk while a position is open")
+        config.pause(name)
+        return {"paused": True, "agent": name}
+
+    @app.post("/api/agents/{name}/resume")
+    async def resume(name: str, _: None = auth):
+        config.resume(name)
+        return {"paused": False, "agent": name}
+
+    class ModeBody(BaseModel):
+        mode: str
+        confirm: str | None = None
+
+    @app.post("/api/mode")
+    async def mode(body: ModeBody, _: None = auth):
+        m = body.mode.upper()
+        if m == "LIVE":
+            if body.confirm != "LIVE":
+                raise HTTPException(400, "confirm LIVE required")
+            if not db.has_full_paper_night():
+                raise HTTPException(400, "Need 1 full PAPER night first")
+        ok, msg = config.set_setting("desk.mode", m, who="app", db=db)
+        if not ok:
+            raise HTTPException(400, msg)
+        return {"mode": m, "msg": msg}
+
+    class PushBody(BaseModel):
+        endpoint: str
+        keys: dict[str, str]
+
+    @app.post("/api/push")
+    async def push_sub(body: PushBody, _: None = auth):
+        db.save_push_sub(body.endpoint, body.keys.get("p256dh", ""), body.keys.get("auth", ""))
+        return {"ok": True}
+
+    @app.get("/api/stream")
+    async def stream(_: None = auth):
+        q = await bus.subscribe_sse()
+
+        async def gen():
+            try:
+                yield "event: hello\ndata: {}\n\n"
+                while True:
+                    try:
+                        item = await asyncio.wait_for(q.get(), timeout=25)
+                        yield f"event: {item['event']}\ndata: {json.dumps(item['data'], default=str)}\n\n"
+                    except asyncio.TimeoutError:
+                        yield "event: ping\ndata: {}\n\n"
+            finally:
+                await bus.unsubscribe_sse(q)
+
+        return StreamingResponse(gen(), media_type="text/event-stream")
+
+    @app.post("/api/test-push")
+    async def test_push(_: None = auth):
+        desk = app.state.desk
+        if desk and desk.notifier:
+            await desk.notifier.send(
+                "Desk test push from app",
+                mint=None,
+                buttons=[{"kind": "url", "text": "Open Pump.fun", "url": SIGNUP_URL}],
+            )
+            return {"ok": True}
+        return {"ok": False}
+
+    @app.get("/d/")
+    async def planb_root():
+        raise HTTPException(status_code=404, detail="not found")
+
+    @app.get("/d/{maybe}")
+    async def planb_wrong(maybe: str):
+        import os
+        # Exact DATA_PATH without a file = no directory listing. Wrong path = 404.
+        # Files under /d/{DATA_PATH}/... are served by the StaticFiles mount.
+        raise HTTPException(status_code=404, detail="not found")
+
+    # static
+    if WEB.exists():
+
+        # Plan B files stay on local disk. They are not mounted without auth.
+        app.mount("/assets", StaticFiles(directory=WEB), name="assets")
+
+        @app.get("/")
+        async def index():
+            return FileResponse(WEB / "index.html")
+
+        @app.get("/manifest.json")
+        async def manifest():
+            return FileResponse(WEB / "manifest.json")
+
+        @app.get("/sw.js")
+        async def sw():
+            return FileResponse(WEB / "sw.js")
+
+        @app.get("/app.css")
+        async def css():
+            return FileResponse(WEB / "app.css")
+
+        @app.get("/app.js")
+        async def js():
+            return FileResponse(WEB / "app.js")
+
+        @app.get("/chart.js")
+        async def chartjs():
+            return FileResponse(WEB / "chart.js")
+
+        @app.get("/icons/{name}")
+        async def icon(name: str):
+            p = WEB / "icons" / name
+            if not p.exists():
+                raise HTTPException(404)
+            return FileResponse(p)
+
+    @app.get("/health/live")
+    async def health_live():
+        return {"status": "live"}
+
+    @app.get("/health/ready")
+    async def health_ready():
+        try:
+            ok = db.ping()
+        except Exception:
+            raise HTTPException(status_code=503, detail="db")
+        if not ok:
+            raise HTTPException(status_code=503, detail="db")
+        return {"status": "ready"}
+
+    @app.get("/health")
+    async def health_detail(_: None = header_auth):
+        desk_obj = app.state.desk
+        return healthmod.build_health(
+            db,
+            bus,
+            telegram=getattr(desk_obj, "telegram", None),
+            scanner=getattr(desk_obj, "scanner", None),
+        )
+
+    @app.get("/metrics")
+    async def metrics_route(_: None = header_auth):
+        snap = METRICS.snapshot()
+        for queue in bus.queue_stats():
+            snap[f"queue_depth_{queue['name']}"] = int(queue["depth"])
+            snap[f"queue_dropped_{queue['name']}"] = int(queue["dropped"])
+        snap["broadcast_enabled"] = 0
+        return snap
+
+    class PreviewBody(BaseModel):
+        cluster: str
+        mint: str
+        name: str
+        symbol: str
+        decimals: int
+        side: str
+        amount_base: int
+        destination: str
+        max_lamports_in: int
+        min_amount_out: int
+        slippage_bps: int
+        fee_lamports_ceiling: int
+
+    class VerifyBody(BaseModel):
+        public_key_hex: str
+        signature_hex: str
+        message_sha256: str
+
+    @app.post("/api/sim/preview")
+    async def sim_preview(body: PreviewBody, request: Request, _: None = header_auth):
+        key = request.headers.get("idempotency-key")
+        try:
+            row = simpreview.create_preview(app.state.sim, body.model_dump(), key)
+        except simpreview.SimError as exc:
+            raise HTTPException(status_code=400, detail={"code": exc.code, "message": exc.message})
+        METRICS.inc("sim_preview_created")
+        return row
+
+    @app.get("/api/sim/preview/{preview_id}")
+    async def sim_preview_get(preview_id: str, _: None = header_auth):
+        try:
+            return simpreview.get_preview(app.state.sim, preview_id)
+        except simpreview.SimError as exc:
+            status = 410 if exc.code == "expired" else 404
+            raise HTTPException(status_code=status, detail={"code": exc.code, "message": exc.message})
+
+    @app.post("/api/sim/preview/{preview_id}/verify")
+    async def sim_preview_verify(preview_id: str, body: VerifyBody, _: None = header_auth):
+        try:
+            public_key = bytes.fromhex(body.public_key_hex)
+            signature = bytes.fromhex(body.signature_hex)
+        except ValueError:
+            raise HTTPException(status_code=400, detail={"code": "schema", "message": "hex required"})
+        try:
+            return simpreview.verify_preview(
+                app.state.sim, preview_id, public_key, signature, body.message_sha256
+            )
+        except simpreview.SimError as exc:
+            METRICS.inc("sim_verify_rejected")
+            code = 409 if exc.code in ("replay", "idempotency") else 400
+            raise HTTPException(status_code=code, detail={"code": exc.code, "message": exc.message})
+
+    @app.post("/api/sim/stop")
+    async def sim_stop(_: None = header_auth):
+        app.state.sim.stop()
+        return {"stopped": True, "broadcast_enabled": False}
+
+    return app
+
+
+def _range_since(range_: str) -> str | None:
+    now = datetime.now(timezone.utc)
+    mapping = {
+        "LIVE": timedelta(hours=1),
+        "1H": timedelta(hours=1),
+        "4H": timedelta(hours=4),
+        "1D": timedelta(days=1),
+        "1W": timedelta(weeks=1),
+        "ALL": None,
+    }
+    delta = mapping.get(range_.upper())
+    if delta is None and range_.upper() == "ALL":
+        return None
+    if delta is None:
+        delta = timedelta(hours=1)
+    return (now - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _ohlc(prices: list[dict]) -> list[dict]:
+    buckets: dict[str, dict] = {}
+    for p in prices:
+        ts = p["ts"][:16]  # minute
+        price = float(p["price"])
+        vol = p.get("volume_m5")
+        b = buckets.get(ts)
+        if not b:
+            buckets[ts] = {
+                "ts": ts,
+                "o": price,
+                "h": price,
+                "l": price,
+                "c": price,
+                "v": float(vol or 0),
+            }
+        else:
+            b["h"] = max(b["h"], price)
+            b["l"] = min(b["l"], price)
+            b["c"] = price
+            if vol is not None:
+                b["v"] = float(vol)
+    return [buckets[k] for k in sorted(buckets)]
+
+
+def _agent_cards(db) -> list[dict]:
+    return [
+        {
+            "name": "scanner",
+            "title": "Scanner",
+            "color": "#64d2ff",
+            "count": db.count_today("scans"),
+            "paused": config.is_paused("scanner"),
+            "status": "Listening for graduations",
+        },
+        {
+            "name": "auditor",
+            "title": "Auditor",
+            "color": "#fff",
+            "count": db.count_today("audit_runs"),
+            "paused": config.is_paused("auditor"),
+            "status": "Ready",
+        },
+        {
+            "name": "analyst",
+            "title": "Analyst",
+            "color": "#ffd60a",
+            "count": db.count_today("verdicts"),
+            "paused": config.is_paused("analyst"),
+            "status": "Scoring (rules)",
+        },
+        {
+            "name": "executor",
+            "title": "Executor",
+            "color": "#00d35a",
+            "count": db.count_today("signals"),
+            "paused": config.is_paused("executor"),
+            "status": "Ready",
+        },
+        {
+            "name": "risk",
+            "title": "Risk",
+            "color": "#ff6b9a",
+            "count": len(db.open_positions()),
+            "paused": config.is_paused("risk"),
+            "status": "Guarding" if db.open_positions() else "Idle",
+            "stop_pct": config.get("risk.stop_pct"),
+            "trail_pct": config.get("risk.trail_pct"),
+        },
+    ]
