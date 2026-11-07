@@ -205,11 +205,13 @@ class ReconcileTests(unittest.TestCase):
             self.assertIn("live", body)
             self.assertIsNone(proc.poll())
         finally:
-            proc.terminate()
+            if proc.poll() is None:
+                proc.terminate()
             try:
-                proc.wait(timeout=5)
+                proc.communicate(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
+                proc.communicate(timeout=5)
         refused = os.environ.copy()
         refused.update({"DESK_OFFLINE": "1", "DESK_HOST": "0.0.0.0", "DESK_PORT": str(_free_port()), "PYTHONDONTWRITEBYTECODE": "1"})
         refused.pop("TG_TOKEN", None)
