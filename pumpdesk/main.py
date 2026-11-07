@@ -167,8 +167,7 @@ class Desk:
     async def start(self):
         from preflight import assert_runtime
         host = os.environ.get("DESK_HOST", "127.0.0.1")
-        if os.environ.get("DESK_SKIP_PREFLIGHT") != "1":
-            assert_runtime(host, ROOT / ".secrets")
+        assert_runtime(host, ROOT / ".secrets")
         self._acquire_process_lock()
         offline = os.environ.get("DESK_OFFLINE") == "1"
         if not offline:
