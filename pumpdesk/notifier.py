@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 import config
@@ -11,9 +12,10 @@ log = logging.getLogger("notifier")
 
 
 class Notifier:
-    def __init__(self, telegram=None, webpush=None):
+    def __init__(self, telegram=None, webpush=None, db=None):
         self.telegram = telegram
         self.webpush = webpush
+        self.db = db
 
     async def send(
         self,
@@ -35,8 +37,11 @@ class Notifier:
             if b.get("kind") == "url" and mint and not b.get("url"):
                 b["url"] = coin_url(mint, "solana")
             fixed.append(b)
+        if self.db is not None:
+            self.db.enqueue_notification("desk", text)
         channel = config.get("desk.notifier") or "telegram"
-        if channel == "telegram" and self.telegram:
+        deliver = os.environ.get("NOTIFY_DELIVER", "1") == "1"
+        if channel == "telegram" and self.telegram and deliver:
             await self.telegram.send(text, buttons=fixed)
         if self.webpush and mint:
             try:

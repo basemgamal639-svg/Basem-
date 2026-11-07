@@ -46,7 +46,8 @@ class Desk:
         self.bus = Bus()
         self.webpush = WebPush(self.db)
         self.telegram = Telegram(self.db, self.bus)
-        self.notifier = Notifier(telegram=self.telegram, webpush=self.webpush)
+        self.notifier = Notifier(telegram=self.telegram, webpush=self.webpush, db=self.db)
+        self._lock_handle = None
         self.scanner = Scanner(self.db, self.bus, self.notifier)
         self.auditor = Auditor(self.db, self.bus, self.notifier)
         self.analyst = Analyst(self.db, self.bus, self.notifier)
@@ -149,7 +150,20 @@ class Desk:
                 await self.bus.publish_sse("balance", {"value": bal})
             self.db.heartbeat("main")
 
+    def _acquire_process_lock(self):
+        import fcntl
+        path = ROOT / "data" / "pumpdesk.lock"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("a")
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            handle.close()
+            raise SystemExit("another pump desk process holds the lock; refusing a second Telegram poller")
+        self._lock_handle = handle
+
     async def start(self):
+        self._acquire_process_lock()
         await self.telegram.start()
         self._tasks = [
             asyncio.create_task(self.scanner.run(), name="scanner"),
@@ -175,6 +189,9 @@ class Desk:
         for t in self._tasks:
             t.cancel()
         await self.telegram.stop()
+        if self._lock_handle is not None:
+            self._lock_handle.close()
+            self._lock_handle = None
 
 
 def main():

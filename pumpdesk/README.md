@@ -148,7 +148,17 @@ Optional later, by a person at a keyboard, not by CI: open the API inside Phanto
 
 Terminate TLS on a reverse proxy. Proxy `/` and `/api` and `/health` to `127.0.0.1:8787`. Keep Pages as static files only. Do not put the API token in Pages `localStorage`.
 
-Wallet login (nonce, cookie session, CSRF) is not implemented. The header token remains the gate. Treat that as temporary and do not expose the port.
+Wallet login is a separate cookie session. `POST /api/session/nonce` then `POST /api/session/verify` check an ed25519 signature over a one-use domain, wallet, cluster, and expiry message. The session cookie is `HttpOnly`, `SameSite=Strict`, and `Secure` unless `SESSION_SECURE=0` (tests only). Later posts must send `X-Requested-With: pumpdesk` and `X-CSRF-Token` matching the `desk_csrf` cookie. `POST /api/session/logout` deletes that session. `APP_TOKEN` cannot create or verify a preview.
+
+`LIVE` cannot be turned on from the API or Telegram. `desk.broadcast_enabled` cannot be set. Simulated intent messages are not Solana transactions. `chaincheck.py` only interprets a fixture of `getSignatureStatuses` and `getTransaction` shapes. It does not call a cluster, and a signature string or a Telegram "Bought" tap cannot mark a fill.
+
+Official Pump instruction building is not wired. The public docs are TypeScript and Rust (`@pump-fun/pump-sdk`, `@pump-fun/pump-swap-sdk`, `pump-rust-client` on https://github.com/pump-fun/pump-public-docs). There is no official Python builder in this tree. DexScreener prices are not turned into a swap. PumpPortal bytes are not accepted.
+
+The Pages shell now detects `github.io`, does not keep the paper token, and says the API is not on that host. A normal browser without `window.phantom.solana.isPhantom` is told to use the Phantom in-app browser. That detection is tested in Node. A real Phantom signature and a real RPC confirmation were not run.
+
+`GET /health/ready` reports `db_readable` and `db_writes_on_this_request: false`. It does not write. Schema version 2 adds intents, sessions, nonces, and the notification outbox without dropping older tables. Notifications are stored in the outbox and are delivered to Telegram only when `NOTIFY_DELIVER` is `1` (the default) and a token is configured. Tests set `NOTIFY_DELIVER=0`.
+
+One process lock is `pumpdesk/data/pumpdesk.lock`, taken before the Telegram poller starts. A second process exits. The parent machine's process was not started.
 
 ## Acceptance, and what is still open
 

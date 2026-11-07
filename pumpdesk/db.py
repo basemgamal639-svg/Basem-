@@ -144,8 +144,56 @@ class DB:
                 CREATE TABLE IF NOT EXISTS runners (
                   mint TEXT, name TEXT, symbol TEXT, night TEXT, h24 REAL
                 );
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                  version INTEGER PRIMARY KEY,
+                  applied_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS intents (
+                  id TEXT PRIMARY KEY,
+                  created_at TEXT,
+                  wallet TEXT,
+                  cluster TEXT,
+                  message_sha256 TEXT,
+                  canonical TEXT,
+                  status TEXT,
+                  signature_hex TEXT,
+                  executable INTEGER DEFAULT 0,
+                  expires_at TEXT,
+                  max_lamports_in INTEGER DEFAULT 0
+                );
+                CREATE TABLE IF NOT EXISTS wallet_sessions (
+                  id_hash TEXT PRIMARY KEY,
+                  wallet TEXT,
+                  cluster TEXT,
+                  csrf TEXT,
+                  created_at TEXT,
+                  expires_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS login_nonces (
+                  nonce TEXT PRIMARY KEY,
+                  wallet TEXT,
+                  cluster TEXT,
+                  domain TEXT,
+                  message TEXT,
+                  expires_at TEXT,
+                  used INTEGER DEFAULT 0
+                );
+                CREATE TABLE IF NOT EXISTS notification_outbox (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  created_at TEXT,
+                  kind TEXT,
+                  body TEXT,
+                  status TEXT
+                );
                 """
             )
+            cur.execute("SELECT version FROM schema_migrations")
+            have = {row[0] for row in cur.fetchall()}
+            if 2 not in have:
+                cur.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES(2, ?)",
+                    (_utc(),),
+                )
 
     # ---- settings ----
     def all_settings(self) -> dict[str, Any]:
@@ -576,6 +624,78 @@ class DB:
                 (_utc(), night_id),
             )
         return True, "paper night marked full by explicit operator action"
+
+    def save_intent(self, row: dict) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO intents(id,created_at,wallet,cluster,message_sha256,canonical,status,"
+                "signature_hex,executable,expires_at,max_lamports_in) VALUES(?,?,?,?,?,?,?,?,?,?,?) "
+                "ON CONFLICT(id) DO UPDATE SET status=excluded.status, signature_hex=excluded.signature_hex",
+                (
+                    row["id"], row.get("created_at") or _utc(), row.get("wallet"), row.get("cluster"),
+                    row.get("message_sha256"), row.get("canonical"), row.get("status"),
+                    row.get("signature_hex"), 0, row.get("expires_at"), int(row.get("max_lamports_in") or 0),
+                ),
+            )
+
+    def list_intents(self, wallet: str, limit: int = 20) -> list[dict]:
+        with self.cursor() as cur:
+            cur.execute(
+                "SELECT id, created_at, wallet, cluster, message_sha256, status, expires_at, max_lamports_in "
+                "FROM intents WHERE wallet=? ORDER BY created_at DESC LIMIT ?",
+                (wallet, limit),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+    def open_lamports_for_wallet(self, wallet: str) -> int:
+        with self.cursor() as cur:
+            cur.execute(
+                "SELECT COALESCE(SUM(max_lamports_in),0) AS s FROM intents "
+                "WHERE wallet=? AND status IN ('open','verified')",
+                (wallet,),
+            )
+            return int(cur.fetchone()["s"])
+
+    def insert_nonce(self, nonce: str, wallet: str, cluster: str, domain: str, message: str, expires_at: str) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO login_nonces(nonce,wallet,cluster,domain,message,expires_at,used) VALUES(?,?,?,?,?,?,0)",
+                (nonce, wallet, cluster, domain, message, expires_at),
+            )
+
+    def take_nonce(self, nonce: str) -> dict | None:
+        with self.cursor() as cur:
+            cur.execute("SELECT * FROM login_nonces WHERE nonce=? AND used=0", (nonce,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            cur.execute("UPDATE login_nonces SET used=1 WHERE nonce=?", (nonce,))
+            return dict(row)
+
+    def save_session(self, id_hash: str, wallet: str, cluster: str, csrf: str, expires_at: str) -> None:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO wallet_sessions(id_hash,wallet,cluster,csrf,created_at,expires_at) VALUES(?,?,?,?,?,?)",
+                (id_hash, wallet, cluster, csrf, _utc(), expires_at),
+            )
+
+    def get_session(self, id_hash: str) -> dict | None:
+        with self.cursor() as cur:
+            cur.execute("SELECT * FROM wallet_sessions WHERE id_hash=?", (id_hash,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def delete_session(self, id_hash: str) -> None:
+        with self.cursor() as cur:
+            cur.execute("DELETE FROM wallet_sessions WHERE id_hash=?", (id_hash,))
+
+    def enqueue_notification(self, kind: str, body: str) -> int:
+        with self.cursor() as cur:
+            cur.execute(
+                "INSERT INTO notification_outbox(created_at,kind,body,status) VALUES(?,?,?,?)",
+                (_utc(), kind, body, "pending"),
+            )
+            return int(cur.lastrowid)
 
     def ping(self) -> bool:
         """Read-only liveness of the open connection. Does not insert or migrate."""

@@ -162,10 +162,7 @@ class Telegram:
         if low == "live":
             return "Type LIVE to confirm switching to LIVE mode."
         if raw.strip() == "LIVE":
-            if not self.db.has_full_paper_night():
-                return "Need at least 1 full PAPER night before LIVE."
-            ok, msg = config.set_setting("desk.mode", "LIVE", who="telegram", db=self.db)
-            return msg
+            return "LIVE is unavailable. Mainnet sending cannot be enabled."
         m = re.match(r"(?i)^stack\s+(\d+(?:\.\d+)?)$", raw)
         if m:
             ok, msg = config.set_setting("desk.live_stack", float(m.group(1)), who="telegram", db=self.db)

@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -15,11 +17,64 @@ from pydantic import BaseModel
 
 import config
 import health as healthmod
+import session as sessionmod
 import simpreview
 from links import SIGNUP_URL, coin_url, profile_url
 from metrics import METRICS
 
-WEB = Path(__file__).resolve().parent / "web"
+WEB = Path(__file__).resolve().parents[1] / "desk"
+
+
+def _secure_cookie() -> bool:
+    return os.environ.get("SESSION_SECURE", "1") != "0"
+
+
+class SettingsBody(BaseModel):
+    settings: dict[str, Any]
+
+
+class ModeBody(BaseModel):
+    mode: str
+    confirm: str | None = None
+
+
+class PushBody(BaseModel):
+    endpoint: str
+    keys: dict[str, str]
+
+
+class PreviewBody(BaseModel):
+    cluster: str
+    mint: str
+    name: str
+    symbol: str
+    decimals: int
+    side: str
+    amount_base: int
+    destination: str
+    max_lamports_in: int
+    min_amount_out: int
+    slippage_bps: int
+    fee_lamports_ceiling: int
+
+
+class VerifyBody(BaseModel):
+    public_key_hex: str
+    signature_hex: str
+    message_sha256: str
+
+
+class NonceBody(BaseModel):
+    wallet: str
+    cluster: str
+
+
+class LoginBody(BaseModel):
+    wallet: str
+    cluster: str
+    nonce: str
+    public_key_hex: str
+    signature_hex: str
 
 
 def create_app(db, bus, desk=None) -> FastAPI:
@@ -224,9 +279,6 @@ def create_app(db, bus, desk=None) -> FastAPI:
         # strip internal
         return {k: v for k, v in s.items() if not k.startswith("desk._")}
 
-    class SettingsBody(BaseModel):
-        settings: dict[str, Any]
-
     @app.post("/api/settings")
     async def post_settings(body: SettingsBody, _: None = auth):
         results = {}
@@ -247,26 +299,15 @@ def create_app(db, bus, desk=None) -> FastAPI:
         config.resume(name)
         return {"paused": False, "agent": name}
 
-    class ModeBody(BaseModel):
-        mode: str
-        confirm: str | None = None
-
     @app.post("/api/mode")
     async def mode(body: ModeBody, _: None = auth):
         m = body.mode.upper()
         if m == "LIVE":
-            if body.confirm != "LIVE":
-                raise HTTPException(400, "confirm LIVE required")
-            if not db.has_full_paper_night():
-                raise HTTPException(400, "Need 1 full PAPER night first")
+            raise HTTPException(403, "LIVE is unavailable. Mainnet sending cannot be enabled.")
         ok, msg = config.set_setting("desk.mode", m, who="app", db=db)
         if not ok:
             raise HTTPException(400, msg)
         return {"mode": m, "msg": msg}
-
-    class PushBody(BaseModel):
-        endpoint: str
-        keys: dict[str, str]
 
     @app.post("/api/push")
     async def push_sub(body: PushBody, _: None = auth):
@@ -363,7 +404,12 @@ def create_app(db, bus, desk=None) -> FastAPI:
             raise HTTPException(status_code=503, detail="db")
         if not ok:
             raise HTTPException(status_code=503, detail="db")
-        return {"status": "ready"}
+        return {
+            "status": "ready",
+            "db_readable": True,
+            "db_writes_on_this_request": False,
+            "db_writes_at_open": True,
+        }
 
     @app.get("/health")
     async def health_detail(_: None = header_auth):
@@ -384,37 +430,118 @@ def create_app(db, bus, desk=None) -> FastAPI:
         snap["broadcast_enabled"] = 0
         return snap
 
-    class PreviewBody(BaseModel):
-        cluster: str
-        mint: str
-        name: str
-        symbol: str
-        decimals: int
-        side: str
-        amount_base: int
-        destination: str
-        max_lamports_in: int
-        min_amount_out: int
-        slippage_bps: int
-        fee_lamports_ceiling: int
+    def _origin_ok(request: Request) -> None:
+        origin = request.headers.get("origin")
+        host = request.headers.get("host")
+        if not origin or not host:
+            return
+        from urllib.parse import urlparse
+        if urlparse(origin).netloc != host:
+            raise HTTPException(status_code=403, detail="origin mismatch")
 
-    class VerifyBody(BaseModel):
-        public_key_hex: str
-        signature_hex: str
-        message_sha256: str
+    def _require_custom_header(request: Request) -> None:
+        if request.headers.get("x-requested-with") != "pumpdesk":
+            raise HTTPException(status_code=403, detail="missing X-Requested-With")
+
+    def _session(request: Request) -> dict:
+        _origin_ok(request)
+        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
+        if not row:
+            raise HTTPException(status_code=401, detail="wallet session required")
+        return row
+
+    def _csrf(request: Request, sess: dict) -> None:
+        _require_custom_header(request)
+        if request.headers.get("x-csrf-token") != sess.get("csrf"):
+            raise HTTPException(status_code=403, detail="csrf")
+
+    @app.post("/api/session/nonce")
+    async def session_nonce(body: NonceBody, request: Request):
+        _origin_ok(request)
+        _require_custom_header(request)
+        domain = request.headers.get("host") or "localhost"
+        try:
+            issued = sessionmod.issue_nonce(db, body.wallet, body.cluster, domain)
+        except sessionmod.SessionError as exc:
+            raise HTTPException(status_code=400, detail={"code": exc.code, "message": exc.message})
+        csrf = secrets.token_urlsafe(16)
+        response = JSONResponse(issued)
+        response.set_cookie("desk_csrf", csrf, httponly=False, samesite="strict", secure=_secure_cookie(), path="/")
+        return response
+
+    @app.post("/api/session/verify")
+    async def session_verify(body: LoginBody, request: Request):
+        _origin_ok(request)
+        _require_custom_header(request)
+        if request.headers.get("x-csrf-token") != request.cookies.get("desk_csrf"):
+            raise HTTPException(status_code=403, detail="csrf")
+        domain = request.headers.get("host") or "localhost"
+        try:
+            public_key = bytes.fromhex(body.public_key_hex)
+            signature = bytes.fromhex(body.signature_hex)
+            issued = sessionmod.verify_login(
+                db, body.wallet, body.cluster, body.nonce, signature, public_key, domain
+            )
+        except sessionmod.SessionError as exc:
+            raise HTTPException(status_code=400, detail={"code": exc.code, "message": exc.message})
+        except ValueError:
+            raise HTTPException(status_code=400, detail={"code": "schema", "message": "hex required"})
+        response = JSONResponse({"wallet": issued["wallet"], "cluster": issued["cluster"], "expires_at": issued["expires_at"]})
+        response.set_cookie(
+            "desk_session", issued["session_id"], httponly=True, samesite="strict",
+            secure=_secure_cookie(), path="/",
+        )
+        response.set_cookie(
+            "desk_csrf", issued["csrf"], httponly=False, samesite="strict", secure=_secure_cookie(), path="/",
+        )
+        return response
+
+    @app.get("/api/session")
+    async def session_status(request: Request):
+        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
+        if not row:
+            return {"connected": False, "wallet": None, "cluster": None}
+        return {"connected": True, "wallet": row["wallet"], "cluster": row["cluster"]}
+
+    @app.post("/api/session/logout")
+    async def session_logout(request: Request):
+        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
+        if row:
+            _csrf(request, row)
+            db.delete_session(hashlib.sha256(request.cookies.get("desk_session", "").encode()).hexdigest())
+        response = JSONResponse({"connected": False})
+        response.delete_cookie("desk_session", path="/")
+        return response
+
+    @app.get("/api/intents")
+    async def intents(request: Request):
+        sess = _session(request)
+        return {"rows": db.list_intents(sess["wallet"]), "executable": False, "banner": simpreview.BANNER}
 
     @app.post("/api/sim/preview")
-    async def sim_preview(body: PreviewBody, request: Request, _: None = header_auth):
+    async def sim_preview(body: PreviewBody, request: Request):
+        sess = _session(request)
+        _csrf(request, sess)
+        if config.get("desk.emergency_stop"):
+            raise HTTPException(status_code=400, detail={"code": "stopped", "message": "emergency stop is on"})
+        if body.cluster != sess["cluster"]:
+            raise HTTPException(status_code=400, detail={"code": "cluster", "message": "cluster does not match the wallet session"})
+        projected = db.open_lamports_for_wallet(sess["wallet"]) + int(body.max_lamports_in) + int(body.fee_lamports_ceiling)
+        if projected > simpreview.SIM_MAX_LAMPORTS:
+            raise HTTPException(status_code=400, detail={"code": "limit", "message": "concurrent lamport cap"})
         key = request.headers.get("idempotency-key")
         try:
             row = simpreview.create_preview(app.state.sim, body.model_dump(), key)
         except simpreview.SimError as exc:
             raise HTTPException(status_code=400, detail={"code": exc.code, "message": exc.message})
+        row["wallet"] = sess["wallet"]
+        db.save_intent(row)
         METRICS.inc("sim_preview_created")
         return row
 
     @app.get("/api/sim/preview/{preview_id}")
-    async def sim_preview_get(preview_id: str, _: None = header_auth):
+    async def sim_preview_get(preview_id: str, request: Request):
+        _session(request)
         try:
             return simpreview.get_preview(app.state.sim, preview_id)
         except simpreview.SimError as exc:
@@ -422,25 +549,51 @@ def create_app(db, bus, desk=None) -> FastAPI:
             raise HTTPException(status_code=status, detail={"code": exc.code, "message": exc.message})
 
     @app.post("/api/sim/preview/{preview_id}/verify")
-    async def sim_preview_verify(preview_id: str, body: VerifyBody, _: None = header_auth):
+    async def sim_preview_verify(preview_id: str, body: VerifyBody, request: Request):
+        sess = _session(request)
+        _csrf(request, sess)
+        if config.get("desk.emergency_stop"):
+            raise HTTPException(status_code=400, detail={"code": "stopped", "message": "emergency stop is on"})
         try:
             public_key = bytes.fromhex(body.public_key_hex)
             signature = bytes.fromhex(body.signature_hex)
         except ValueError:
             raise HTTPException(status_code=400, detail={"code": "schema", "message": "hex required"})
         try:
-            return simpreview.verify_preview(
+            result = simpreview.verify_preview(
                 app.state.sim, preview_id, public_key, signature, body.message_sha256
             )
         except simpreview.SimError as exc:
             METRICS.inc("sim_verify_rejected")
             code = 409 if exc.code in ("replay", "idempotency") else 400
             raise HTTPException(status_code=code, detail={"code": exc.code, "message": exc.message})
+        stored = app.state.sim.rows.get(preview_id) or {}
+        stored["wallet"] = sess["wallet"]
+        stored["signature_hex"] = body.signature_hex
+        stored["status"] = "verified"
+        db.save_intent(stored)
+        result["solana_transaction"] = False
+        result["note"] = "This verifies a simulated intent message. It is not a Solana transaction and it is not a fill."
+        return result
 
     @app.post("/api/sim/stop")
-    async def sim_stop(_: None = header_auth):
+    async def sim_stop(request: Request):
+        sess = _session(request)
+        _csrf(request, sess)
         app.state.sim.stop()
-        return {"stopped": True, "broadcast_enabled": False}
+        config.set_setting("desk.emergency_stop", True, who="wallet-session", db=db)
+        return {"stopped": True, "broadcast_enabled": False, "note": "A stop cannot undo a transaction that was already broadcast. This process has no broadcast path."}
+
+    @app.post("/api/chain/interpret")
+    async def chain_interpret(request: Request):
+        """Test helper: interpret a caller-supplied fixture. It does not query a cluster."""
+        sess = _session(request)
+        _csrf(request, sess)
+        payload = await request.json()
+        from chaincheck import evaluate_fill
+        result = evaluate_fill(payload.get("status"), payload.get("transaction"), payload.get("expected") or {})
+        result["queried_network"] = False
+        return result
 
     return app
 

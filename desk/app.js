@@ -7,7 +7,17 @@
     offline: false,
   };
 
+  function onPages() {
+    return /(^|\.)github\.io$/i.test(location.hostname || "");
+  }
+
   function bootToken() {
+    if (onPages()) {
+      state.token = null;
+      try { localStorage.removeItem("desk_app_token"); } catch (e) {}
+      if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+      return;
+    }
     const hash = location.hash || '';
     const m = hash.match(/[#&]t=([^&]+)/);
     if (m) {
@@ -279,16 +289,119 @@
     } catch (e) { err(e); }
   }
 
-  function init() {
-    bootToken();
-    if (!state.token) {
-      document.body.innerHTML = '<div style="padding:40px;color:#fff;font-family:-apple-system">Open the desk URL with #t=… token fragment once.</div>';
+  function showHost(text) {
+    const banner = document.getElementById("hostBanner");
+    if (!banner) return;
+    banner.textContent = text;
+    banner.classList.remove("hidden");
+  }
+
+  async function refreshWallet() {
+    const status = document.getElementById("walletStatus");
+    const detected = (typeof describePhantom === "function") ? describePhantom(window) : { state: "unsupported", message: "Wallet script missing." };
+    if (onPages()) {
+      if (status) status.textContent = detected.message + " This static host is not connected to the desk API.";
       return;
     }
-    document.querySelectorAll('.tabbar button').forEach(b => {
-      b.onclick = () => { showTab(b.dataset.tab); loop(); };
+    if (detected.state !== "available") {
+      if (status) status.textContent = detected.message;
+      return;
+    }
+    try {
+      const res = await fetch("/api/session", { credentials: "same-origin", headers: { "Accept": "application/json" } });
+      if (!res.ok) throw new Error("session");
+      const body = await res.json();
+      if (status) status.textContent = body.connected ? "Session connected" : "Phantom is available. Not signed in.";
+      const addr = document.getElementById("walletAddress");
+      if (addr) addr.textContent = body.wallet || "";
+      const hist = document.getElementById("intentHistory");
+      if (body.connected && hist) {
+        const rows = await fetch("/api/intents", { credentials: "same-origin" });
+        if (rows.ok) {
+          const data = await rows.json();
+          hist.textContent = (data.rows || []).length ? ((data.rows || []).length + " simulated intents. Not Solana fills.") : "No simulated intents.";
+        }
+      }
+    } catch (e) {
+      if (status) status.textContent = "Desk API is not reachable from this page.";
+    }
+  }
+
+  async function connectWallet() {
+    const detected = describePhantom(window);
+    if (detected.state !== "available") {
+      document.getElementById("walletStatus").textContent = detected.message;
+      return;
+    }
+    if (onPages()) {
+      showHost("GitHub Pages cannot complete wallet login. Open the desk on its API origin.");
+      return;
+    }
+    const provider = window.phantom.solana;
+    const resp = await provider.connect();
+    const wallet = resp.publicKey.toString();
+    const nonceRes = await fetch("/api/session/nonce", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "pumpdesk" },
+      body: JSON.stringify({ wallet: wallet, cluster: "devnet" }),
     });
-    document.getElementById('avatar').onclick = () => { showTab('account'); loop(); };
+    if (!nonceRes.ok) {
+      document.getElementById("walletStatus").textContent = "Login nonce was refused. Cluster is devnet-only.";
+      return;
+    }
+    const nonce = await nonceRes.json();
+    const signed = await provider.signMessage(new TextEncoder().encode(nonce.message), "utf8");
+    const csrf = (document.cookie.match(/(?:^|; )desk_csrf=([^;]+)/) || [])[1];
+    const verify = await fetch("/api/session/verify", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "pumpdesk",
+        "X-CSRF-Token": decodeURIComponent(csrf || ""),
+      },
+      body: JSON.stringify({
+        wallet: wallet,
+        cluster: "devnet",
+        nonce: nonce.nonce,
+        public_key_hex: Array.from(resp.publicKey.toBytes()).map(function (b) { return b.toString(16).padStart(2, "0"); }).join(""),
+        signature_hex: Array.from(signed.signature).map(function (b) { return b.toString(16).padStart(2, "0"); }).join(""),
+      }),
+    });
+    document.getElementById("walletStatus").textContent = verify.ok ? "Signed in with Phantom. Preview only." : "Wallet signature was not accepted.";
+    refreshWallet();
+  }
+
+  function init() {
+    bootToken();
+    const live = document.getElementById("modeLive");
+    if (live) live.disabled = true;
+    document.getElementById("connectWallet").onclick = function () { connectWallet().catch(function () { showHost("Wallet connect failed before a session was created."); }); };
+    const disconnect = document.getElementById("disconnectWallet");
+    if (disconnect) disconnect.onclick = async function () {
+      if (onPages()) return;
+      const csrf = (document.cookie.match(/(?:^|; )desk_csrf=([^;]+)/) || [])[1];
+      await fetch("/api/session/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "pumpdesk", "X-CSRF-Token": decodeURIComponent(csrf || "") },
+      });
+      refreshWallet();
+    };
+    refreshWallet();
+    document.querySelectorAll('.tabbar button').forEach(b => {
+      b.onclick = () => { showTab(b.dataset.tab); if (state.token && !onPages()) loop(); };
+    });
+    document.getElementById('avatar').onclick = () => { showTab('account'); if (state.token && !onPages()) loop(); };
+    if (onPages()) {
+      showHost("GitHub Pages is static. The desk API is not on this host, so paper data and wallet login stay disconnected.");
+      return;
+    }
+    if (!state.token) {
+      showHost("Paper numbers stay blank until this same-origin API accepts the desk token. That token cannot approve a wallet preview.");
+      return;
+    }
     document.getElementById('seeAll').onclick = () => { showTab('activity'); loop(); };
     document.getElementById('ranges').onclick = (e) => {
       const b = e.target.closest('button'); if (!b) return;
@@ -302,13 +415,8 @@
       await api('/api/mode', { method: 'POST', body: { mode: 'PAPER' } });
       refreshAccount(); refreshHome();
     };
-    document.getElementById('modeLive').onclick = async () => {
-      const confirm = prompt('Type LIVE to confirm');
-      if (confirm !== 'LIVE') return;
-      try {
-        await api('/api/mode', { method: 'POST', body: { mode: 'LIVE', confirm: 'LIVE' } });
-      } catch (e) { alert('LIVE blocked: need 1 full PAPER night and confirm'); }
-      refreshAccount();
+    document.getElementById('modeLive').onclick = () => {
+      showHost("LIVE is unavailable. This screen cannot enable mainnet sending.");
     };
     document.getElementById('testPush').onclick = async () => {
       await api('/api/test-push', { method: 'POST' });

@@ -78,6 +78,8 @@ DEFAULTS: dict[str, Any] = {
     "desk.owner_chat_id": 0,
     "desk.owner_telegram_username": "",
     "desk.tz": "America/Toronto",
+    "desk.emergency_stop": False,
+    "desk.broadcast_enabled": False,
 }
 
 RANGES: dict[str, tuple[float, float]] = {
@@ -230,6 +232,10 @@ def set_setting(key: str, value, who: str = "user", db=None) -> tuple[bool, str]
         value = str(value).upper()
         if value not in ("PAPER", "LIVE"):
             return False, "mode must be PAPER or LIVE"
+        if value == "LIVE":
+            return False, "LIVE is unavailable. Mainnet sending cannot be enabled."
+    if key == "desk.broadcast_enabled":
+        return False, "broadcast cannot be enabled"
     if key == "desk.rpc_url":
         from rpc_allowlist import validate_rpc_url
         ok_rpc, why = validate_rpc_url(str(value))
