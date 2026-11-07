@@ -1,0 +1,85 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Review",
+  "description": "Testimonials. Submitted via `marketplace` function as pending; only approved ones are displayed.",
+  "type": "object",
+  "properties": {
+    "author_id": {
+      "type": "string",
+      "description": "Author user id"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "author_role": {
+      "type": "string",
+      "description": "e.g. \"Sous Chef\" or \"Owner\""
+    },
+    "business_name": {
+      "type": "string",
+      "description": "Business (optional)"
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "seeker",
+        "employer"
+      ],
+      "description": "Who wrote it"
+    },
+    "quote": {
+      "type": "string",
+      "description": "Testimonial",
+      "maxLength": 800
+    },
+    "rating": {
+      "type": "number",
+      "description": "1-5",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "description": "Moderation",
+      "default": "pending"
+    },
+    "featured": {
+      "type": "boolean",
+      "description": "Show on homepage",
+      "default": false
+    },
+    "consent_to_publish": {
+      "type": "boolean",
+      "description": "Author agreed to public display",
+      "default": false
+    }
+  },
+  "required": [
+    "author_name",
+    "quote"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

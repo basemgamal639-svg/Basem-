@@ -1,0 +1,38 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "PlatformSetting",
+  "description": "Configurable platform settings keyed by name: pricing, branding, community, seo, payments.",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Setting key"
+    },
+    "value": {
+      "type": "object",
+      "description": "Setting value",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

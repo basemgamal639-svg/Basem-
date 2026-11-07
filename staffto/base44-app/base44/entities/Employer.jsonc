@@ -1,0 +1,219 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Employer",
+  "description": "A hospitality business profile. Public read; owner edits; plan and verification are admin/server controlled.",
+  "type": "object",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "User id of the business account owner"
+    },
+    "business_name": {
+      "type": "string",
+      "description": "Legal or trading name",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL slug"
+    },
+    "business_type": {
+      "type": "string",
+      "enum": [
+        "restaurant",
+        "bar_pub",
+        "cafe",
+        "hotel",
+        "catering",
+        "bakery",
+        "nightlife",
+        "event_venue",
+        "food_truck",
+        "other_hospitality"
+      ],
+      "description": "Type of hospitality business"
+    },
+    "description": {
+      "type": "string",
+      "description": "About the business",
+      "maxLength": 4000
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Public logo image URL"
+    },
+    "cover_url": {
+      "type": "string",
+      "description": "Public cover photo URL"
+    },
+    "website": {
+      "type": "string",
+      "description": "Website URL"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Business phone"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Hiring contact email (never shown publicly)",
+      "format": "email"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Hiring contact name"
+    },
+    "address": {
+      "type": "string",
+      "description": "Street address"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "downtown_toronto",
+        "north_york",
+        "scarborough",
+        "etobicoke",
+        "east_york",
+        "york",
+        "mississauga",
+        "brampton",
+        "markham",
+        "vaughan",
+        "richmond_hill",
+        "oakville",
+        "pickering",
+        "ajax",
+        "other_gta"
+      ],
+      "description": "Primary GTA area"
+    },
+    "additional_locations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Other GTA areas the business operates in (Premium)"
+    },
+    "employee_count_band": {
+      "type": "string",
+      "enum": [
+        "1-9",
+        "10-24",
+        "25-49",
+        "50-99",
+        "100+"
+      ],
+      "description": "Number of employees in Ontario (drives ESA job-posting obligations)"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Instagram handle"
+    },
+    "verification_requested": {
+      "type": "boolean",
+      "description": "Owner has requested verification",
+      "default": false
+    },
+    "verified": {
+      "type": "boolean",
+      "description": "Verified by StaffTO staff",
+      "default": false,
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "single",
+        "pro",
+        "premium"
+      ],
+      "description": "Current plan (set by billing/admin)",
+      "default": "free",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "job_credits": {
+      "type": "number",
+      "description": "Unused single-job posting credits",
+      "default": 0,
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "featured_credits": {
+      "type": "number",
+      "description": "Unused featured-listing credits",
+      "default": 0,
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended"
+      ],
+      "description": "Account status",
+      "default": "active",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "owner_id",
+    "business_name",
+    "business_type",
+    "location"
+  ],
+  "rls": {
+    "create": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

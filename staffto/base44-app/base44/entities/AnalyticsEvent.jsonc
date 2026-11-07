@@ -1,0 +1,89 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "AnalyticsEvent",
+  "description": "First-party analytics event recorded by the `site` function (no third-party trackers).",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "page_view",
+        "job_view",
+        "apply_click",
+        "application",
+        "signup",
+        "share",
+        "referral_visit",
+        "employer_signup",
+        "job_published",
+        "checkout"
+      ],
+      "description": "Event type"
+    },
+    "path": {
+      "type": "string",
+      "description": "Path"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Job id"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User id if signed in"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Random per-tab session id"
+    },
+    "utm_source": {
+      "type": "string",
+      "description": "utm_source"
+    },
+    "utm_medium": {
+      "type": "string",
+      "description": "utm_medium"
+    },
+    "utm_campaign": {
+      "type": "string",
+      "description": "utm_campaign"
+    },
+    "ref": {
+      "type": "string",
+      "description": "Referral code"
+    },
+    "channel": {
+      "type": "string",
+      "description": "Share channel"
+    },
+    "referrer_host": {
+      "type": "string",
+      "description": "document.referrer host"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "DataRequest",
+  "description": "Privacy requests (access/export or deletion) under PIPEDA.",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Requester"
+    },
+    "email": {
+      "type": "string",
+      "description": "Requester email"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "export",
+        "deletion"
+      ],
+      "description": "Type"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "received",
+        "completed"
+      ],
+      "description": "Status",
+      "default": "received"
+    },
+    "completed_at": {
+      "type": "string",
+      "description": "Completed at",
+      "format": "date-time"
+    },
+    "summary": {
+      "type": "object",
+      "description": "What was exported or deleted",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "user_id",
+    "type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

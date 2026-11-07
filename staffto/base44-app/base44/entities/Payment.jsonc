@@ -1,0 +1,134 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "Payment",
+  "description": "Payment / invoice record. Written only by billing/admin functions.",
+  "type": "object",
+  "properties": {
+    "employer_id": {
+      "type": "string",
+      "description": "Employer id"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Owner user id"
+    },
+    "employer_name": {
+      "type": "string",
+      "description": "Billed business name"
+    },
+    "product": {
+      "type": "string",
+      "enum": [
+        "single_job",
+        "featured_upgrade",
+        "pro_monthly",
+        "premium_monthly"
+      ],
+      "description": "Product"
+    },
+    "description": {
+      "type": "string",
+      "description": "Line description"
+    },
+    "subtotal_cents": {
+      "type": "number",
+      "description": "Subtotal before discount, cents"
+    },
+    "discount_cents": {
+      "type": "number",
+      "description": "Discount, cents",
+      "default": 0
+    },
+    "tax_cents": {
+      "type": "number",
+      "description": "HST (13%), cents",
+      "default": 0
+    },
+    "total_cents": {
+      "type": "number",
+      "description": "Total, cents"
+    },
+    "currency": {
+      "type": "string",
+      "description": "Currency",
+      "default": "CAD"
+    },
+    "promo_code": {
+      "type": "string",
+      "description": "Promo code applied"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed",
+        "refunded",
+        "cancelled"
+      ],
+      "description": "Status",
+      "default": "pending"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "manual",
+        "promo"
+      ],
+      "description": "Provider"
+    },
+    "provider_ref": {
+      "type": "string",
+      "description": "Provider session/charge id"
+    },
+    "invoice_number": {
+      "type": "string",
+      "description": "Invoice number"
+    },
+    "paid_at": {
+      "type": "string",
+      "description": "Paid at",
+      "format": "date-time"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Job this payment relates to (featured upgrade)"
+    }
+  },
+  "required": [
+    "employer_id",
+    "owner_id",
+    "product",
+    "total_cents"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

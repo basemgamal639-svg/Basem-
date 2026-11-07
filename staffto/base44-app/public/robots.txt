@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /employer
+Disallow: /admin
+Disallow: /messages
+Disallow: /onboarding
+
+Sitemap: https://staffto.ca/sitemap.xml
+Sitemap: https://staffto.ca/api/sitemap

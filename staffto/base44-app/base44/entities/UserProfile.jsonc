@@ -1,0 +1,125 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "UserProfile",
+  "description": "App-level profile and consent record for every signed-in user (one per user).",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Base44 user id that owns this profile"
+    },
+    "email": {
+      "type": "string",
+      "description": "Account email",
+      "format": "email"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "account_type": {
+      "type": "string",
+      "enum": [
+        "seeker",
+        "employer"
+      ],
+      "description": "Primary account type chosen at onboarding"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "marketing_consent": {
+      "type": "boolean",
+      "description": "Express CASL consent to receive commercial electronic messages",
+      "default": false
+    },
+    "marketing_consent_at": {
+      "type": "string",
+      "description": "ISO timestamp when marketing consent was given",
+      "format": "date-time"
+    },
+    "notify_email": {
+      "type": "boolean",
+      "description": "Transactional email notifications (applications, status changes)",
+      "default": true
+    },
+    "unsubscribe_token": {
+      "type": "string",
+      "description": "Random token used by one-click unsubscribe links"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "This user's own referral code"
+    },
+    "referred_by": {
+      "type": "string",
+      "description": "Referral code used at sign-up"
+    },
+    "ai_processing_consent": {
+      "type": "boolean",
+      "description": "Consent to AI-assisted resume analysis for applications",
+      "default": false
+    },
+    "terms_accepted_at": {
+      "type": "string",
+      "description": "ISO timestamp terms and privacy policy were accepted",
+      "format": "date-time"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "description": "Has finished onboarding",
+      "default": false
+    },
+    "suspended": {
+      "type": "boolean",
+      "description": "Suspended by an administrator",
+      "default": false,
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "user_id",
+    "account_type"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

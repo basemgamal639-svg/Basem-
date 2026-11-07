@@ -1,0 +1,82 @@
+// StaffTO entity schema — deployed with `base44 entities push` (or `base44 deploy`).
+{
+  "name": "PromoCode",
+  "description": "Promotional codes (admin only; validated server-side by billing).",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Code (uppercase)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Internal note"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "fixed"
+      ],
+      "description": "Discount type"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Percent (0-100) or fixed cents"
+    },
+    "applies_to": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Products this applies to (empty = all)"
+    },
+    "max_redemptions": {
+      "type": "number",
+      "description": "Max redemptions (0 = unlimited)",
+      "default": 0
+    },
+    "redemptions": {
+      "type": "number",
+      "description": "Times redeemed",
+      "default": 0
+    },
+    "valid_until": {
+      "type": "string",
+      "description": "Expiry",
+      "format": "date-time"
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Active",
+      "default": true
+    }
+  },
+  "required": [
+    "code",
+    "discount_type",
+    "amount"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
