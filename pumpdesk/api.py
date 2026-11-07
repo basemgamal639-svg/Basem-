@@ -125,9 +125,8 @@ def create_app(db, bus, desk=None) -> FastAPI:
         if t or x_app_token or authorization:
             raise HTTPException(status_code=401, detail="shared bearer and query token are not accepted")
         _origin_ok(request)
-        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
-        owner = os.environ.get("DESK_OWNER_WALLET", "").strip()
-        if not row or not owner or row.get("wallet") != owner:
+        row = _owner_row(request)
+        if not row:
             raise HTTPException(status_code=401, detail="owner session required")
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
             if request.headers.get("x-requested-with") != "pumpdesk":
@@ -463,11 +462,21 @@ def create_app(db, bus, desk=None) -> FastAPI:
         if request.headers.get("x-requested-with") != "pumpdesk":
             raise HTTPException(status_code=403, detail="missing X-Requested-With")
 
+    def _owner_row(request: Request) -> dict | None:
+        raw = request.cookies.get("desk_session")
+        row = sessionmod.session_from_cookie(db, raw)
+        if not row:
+            return None
+        owner = os.environ.get("DESK_OWNER_WALLET", "").strip()
+        if not owner or row.get("wallet") != owner:
+            db.delete_session(hashlib.sha256((raw or "").encode()).hexdigest())
+            return None
+        return row
+
     def _session(request: Request) -> dict:
         _origin_ok(request)
-        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
-        owner = os.environ.get("DESK_OWNER_WALLET", "").strip()
-        if not row or not owner or row.get("wallet") != owner:
+        row = _owner_row(request)
+        if not row:
             raise HTTPException(status_code=401, detail="owner session required")
         return row
 
@@ -521,9 +530,13 @@ def create_app(db, bus, desk=None) -> FastAPI:
 
     @app.get("/api/session")
     async def session_status(request: Request):
-        row = sessionmod.session_from_cookie(db, request.cookies.get("desk_session"))
+        raw = request.cookies.get("desk_session")
+        row = _owner_row(request)
         if not row:
-            return {"connected": False, "wallet": None, "cluster": None}
+            response = JSONResponse({"connected": False, "wallet": None, "cluster": None})
+            if raw:
+                response.delete_cookie("desk_session", path="/")
+            return response
         return {"connected": True, "wallet": row["wallet"], "cluster": row["cluster"]}
 
     @app.post("/api/session/logout")
