@@ -1,4 +1,12 @@
 node_modules/
+__pycache__/
+*.pyc
 data/*.db
 data/*.db-*
 .env
+pumpdesk/.secrets/
+pumpdesk/data/
+pumpdesk/logs/
+pumpdesk/**/*.db
+pumpdesk/**/*.db-*
+pumpdesk/.venv/

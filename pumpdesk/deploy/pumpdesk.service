@@ -1,0 +1,22 @@
+# Example only. This unit is not installed and was not started by the change.
+# One process, so there is one Telegram long-poller.
+# Replace /opt/pumpdesk with the directory that contains main.py.
+
+[Unit]
+Description=Pump desk API (PAPER and simulated previews)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/pumpdesk
+EnvironmentFile=/opt/pumpdesk/.secrets/env
+ExecStart=/opt/pumpdesk/.venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+# Refuse a second copy on the same host.
+ExecStartPre=/usr/bin/flock -n /run/pumpdesk.lock /usr/bin/true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
