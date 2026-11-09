@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { Button, ChipSelect, Empty, Eyebrow, Field, Input, Loading, Select, useToast } from '@/components/ui';
 import { JobCard } from '@/components/jobs';
@@ -141,7 +141,7 @@ export default function Jobs() {
 }
 
 export function SeoLanding() {
-  const { slug } = useParams();
+  const slug = useLocation().pathname.replace(/^\/+|\/+$/g, '');
   const page = SEO_PAGES[slug];
   if (!page) return <NotFoundInline />;
   return (

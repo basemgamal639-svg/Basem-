@@ -43,12 +43,13 @@ export function Employers() {
   );
 }
 
-function PricingSection() {
+function PricingSection({ asPage = false }) {
+  const H = asPage ? 'h1' : 'h2';
   const { settings } = useSession();
   return (
     <section className="mx-auto max-w-page px-4 py-20 sm:px-6" id="pricing">
       <Eyebrow className="mb-2">Pricing</Eyebrow>
-      <h2 className="font-display text-5xl">Simple pricing. No fees for workers.</h2>
+      <H className="font-display text-5xl">Simple pricing. No fees for workers.</H>
       <p className="mb-10 mt-3 max-w-2xl text-muted">All prices in CAD, before 13% HST. Job seekers never pay. Cancel subscriptions any time.</p>
       <PlanGrid pricing={settings.pricing} />
       <p className="mt-6 text-sm text-muted">Need several locations or a hiring blitz before patio season? <Link to="/contact" className="text-ink underline">Talk to us</Link>.</p>
@@ -58,7 +59,7 @@ function PricingSection() {
 
 export function Pricing() {
   useSeo({ title: 'Pricing for Employers', description: 'Job posting prices for Toronto restaurants and hospitality businesses: free profile, single job posts, Pro and Premium plans.', path: '/pricing' });
-  return <PricingSection />;
+  return <PricingSection asPage />;
 }
 
 export function HowItWorks() {

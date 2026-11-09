@@ -187,6 +187,14 @@ try {
     await sp.waitForSelector('text=Line Cook — Brunch');
   });
 
+  await check('SEO landing pages render with live jobs', async () => {
+    await sp.goto(`${BASE}/cook-jobs-toronto`);
+    await sp.waitForSelector('h1:has-text("Cook jobs in Toronto")');
+    await sp.waitForSelector('text=Line Cook — Brunch');
+    await sp.goto(`${BASE}/pricing`);
+    await sp.waitForSelector('h1:has-text("Simple pricing")');
+  });
+
   await check('SEO: job page has JobPosting JSON-LD, canonical and title', async () => {
     await sp.goto(`${BASE}${jobUrl}`);
     await sp.waitForSelector('h1:has-text("Line Cook — Brunch")');
