@@ -74,9 +74,19 @@ Shared helpers live in `base44/shared/shared.ts`. Run `npm run sync:shared` afte
 | `STRIPE_WEBHOOK_SECRET` | stripeWebhook |
 | `SITE_URL` | stripeWebhook (links in emails) |
 
-## Deploying
+## Live deployment (November 9, 2026)
 
-The Base44 account used for this build had reached its free-plan limit of 5 apps, so the app could not be created automatically. Once you have a slot (delete an unused app or upgrade):
+- **App:** `6aee84f10934dffa9c61306a`, live at https://staff-to-9c61306a.base44.app ([editor](https://app.base44.com/apps/6aee84f10934dffa9c61306a/editor/preview)).
+- Base44 created it from its **TanStack Start** template (Cloudflare Workers). In that template, backend logic runs as TanStack server functions, not Deno functions. So the live app uses the overlay in `base44-app/`:
+  - the same action handlers, converted to `src/lib/staffto/*.server.js` behind one validated server function;
+  - the client app mounted on `/` and a catch-all route;
+  - `/api/stripe-webhook` and `/api/sitemap` server routes.
+- The `base44/functions/*` Deno versions remain the reference implementation and are used by the local test suite.
+- The daily housekeeping job is an admin-only action on the live app; schedule it with a Base44 workflow if you want it automatic.
+
+## Deploying a fresh copy
+
+The Base44 CLI path below applies to an app created from the Vite (`backend-and-client`) template:
 
 ```bash
 cd staffto
