@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Job Agent</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1b2230;--mut:#667085;--line:#e4e7ec;--acc:#2563eb;--ok:#15803d;--warn:#b45309;--bad:#b91c1c}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#171e2e;--ink:#e8ecf4;--mut:#93a0b8;--line:#27324a;--acc:#6ea0ff;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+h1{font-size:18px;margin:0}main{padding:16px 20px;max-width:1300px;margin:auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.card b{display:block;font-size:26px}.card span{color:var(--mut);font-size:13px}
+button,select,input,textarea{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+button{cursor:pointer}button.p{background:var(--acc);color:#fff;border-color:var(--acc)}button.d{color:var(--bad)}
+.tabs{display:flex;gap:6px;margin:6px 0 14px;flex-wrap:wrap}.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:860px}th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--mut);text-transform:uppercase}
+.pill{padding:2px 9px;border-radius:99px;font-size:12px;border:1px solid var(--line);white-space:nowrap}
+.s-applied,.s-interview{color:var(--ok)}.s-employer_rejected,.s-bounced{color:var(--bad)}.s-drafted,.s-followup_due,.s-no_contact{color:var(--warn)}
+.draft{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.draft textarea{width:100%;min-height:220px;margin-top:6px}.draft input.subj{width:100%}
+.warn{color:var(--warn);font-size:13px}.mut{color:var(--mut);font-size:13px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.banner{padding:10px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);margin-bottom:14px;font-size:14px}
+a{color:var(--acc)}
+</style></head><body>
+<header><h1>Job Agent</h1><div class="row" style="margin:0">
+ <span id="modeBadge" class="pill"></span><button id="modeBtn"></button><button id="pauseBtn"></button><button class="p" id="runBtn">Run search now</button></div></header>
+<main>
+<div id="banner" class="banner" hidden></div>
+<div class="cards" id="cards"></div>
+<div class="tabs"><button data-t="jobs" class="on">Jobs &amp; applications</button><button data-t="approve">Approval queue <span id="qn"></span></button><button data-t="runs">Run log</button></div>
+
+<section id="t-jobs">
+ <div class="filters">
+  <input id="q" placeholder="Search company / title"><select id="fcat"><option value="">All categories</option><option value="restaurant_management">Restaurant management</option><option value="administrative">Administrative &amp; office</option></select>
+  <input id="floc" placeholder="Location (e.g. Mississauga)"><input id="fsal" type="number" placeholder="Min salary / yr" style="width:140px">
+  <select id="fstatus"><option value="">All statuses (hide rejected)</option></select>
+  <label class="mut"><input type="checkbox" id="frej"> show unsuitable</label>
+ </div>
+ <div class="wrap"><table><thead><tr><th>Company</th><th>Position</th><th>Location</th><th>Salary</th><th>HR Email</th><th>Date Applied</th><th>Status</th><th>Score</th></tr></thead><tbody id="rows"></tbody></table></div>
+</section>
+<section id="t-approve" hidden><div id="drafts"></div></section>
+<section id="t-runs" hidden><div class="wrap"><table><thead><tr><th>Run</th><th>When</th><th>Result</th><th>Errors</th></tr></thead><tbody id="runrows"></tbody></table></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s);let TOKEN=localStorage.getItem('jt')||'';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(p,o={}){const r=await fetch('/api'+p,{...o,headers:{'Content-Type':'application/json','X-Token':TOKEN}});
+ if(r.status==401){TOKEN=prompt('Dashboard token')||'';localStorage.setItem('jt',TOKEN);return api(p,o)}
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||r.statusText);return j}
+const LBL={jobs_discovered:'Jobs discovered',suitable_jobs:'Suitable jobs',applications_sent:'Applications sent',hr_emails_found:'HR emails found',companies_contacted:'Companies contacted',pending_approval:'Pending approval',interviews:'Interview invitations',rejections:'Rejections',followups_required:'Follow-ups required',manual_followup_needed:'Need manual apply'};
+let OV;
+async function overview(){OV=await api('/overview');
+ $('#cards').innerHTML=Object.entries(OV.stats).map(([k,v])=>`<div class="card"><b>${v}</b><span>${LBL[k]}</span></div>`).join('');
+ $('#modeBadge').textContent=OV.mode==='auto'?'AUTO-SEND':'APPROVAL MODE';$('#modeBtn').textContent=OV.mode==='auto'?'Switch to approval mode':'Enable auto-send';
+ $('#pauseBtn').textContent=OV.paused?'Resume':'Pause';$('#qn').textContent=OV.stats.pending_approval+OV.stats.followups_required?`(${OV.stats.pending_approval+OV.stats.followups_required})`:'';
+ const b=[];if(OV.mailer!=='gmail')b.push('<b>Dry-run:</b> Gmail not connected - emails are written to outbox/, nothing is sent.');
+ if(!OV.llm)b.push('No Claude key: scoring/writing use the built-in rules and templates.');if(!OV.sources.length)b.push('<b>No job sources configured</b> - add ADZUNA / RAPIDAPI keys in .env.');
+ if(OV.mode!=='auto')b.push(`Auto-send unlocks after ${OV.unlock_needed} real approved sends (done: ${OV.real_sends}).`);
+ $('#banner').hidden=!b.length;$('#banner').innerHTML=b.join('<br>')}
+async function jobs(){const p=new URLSearchParams({q:$('#q').value,category:$('#fcat').value,location:$('#floc').value,min_salary:$('#fsal').value||0,status:$('#fstatus').value,include_rejected:$('#frej').checked});
+ const rows=await api('/jobs?'+p);const sel=$('#fstatus');if(sel.options.length<3){[...new Set(['new','drafted','applied','followup_due','replied','interview','employer_rejected','no_contact','maybe','duplicate_company','bounced','closed'])].forEach(s=>sel.add(new Option(s.replace('_',' '),s)))}
+ $('#rows').innerHTML=rows.map(r=>`<tr title="${esc(r.reason||r.summary)}"><td>${esc(r.company)}</td><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.position)}</a>${r.notes?`<div class="mut">${esc(r.notes).replace(/(https?:\/\/\S+)/g,'<a href="$1" target="_blank" rel="noopener">link</a>')}</div>`:''}</td><td>${esc(r.location)}</td><td>${esc(r.salary)}</td><td>${esc(r.hr_email)}</td><td>${esc(r.date_applied)}${r.dry_run?' <span class="mut">(dry-run)</span>':''}</td><td><span class="pill s-${r.status_key}">${esc(r.status)}</span></td><td>${r.score??''}</td></tr>`).join('')||'<tr><td colspan="8" class="mut">Nothing yet - run a search.</td></tr>'}
+async function drafts(){const d=await api('/applications?status=draft');
+ $('#drafts').innerHTML=d.map(a=>`<div class="draft" data-id="${a.id}"><b>${esc(a.kind==='followup'?'Follow-up: ':'')}${esc(a.position)} - ${esc(a.company)}</b> <span class="mut">score ${a.score}</span>
+ <div class="mut">To: ${esc(a.to)} (${esc(a.confidence)} confidence, found on ${esc(a.source)}) - <a href="${esc(a.job_url)}" target="_blank" rel="noopener">open listing</a>${a.llm?' - Claude-written paragraph':''}</div>
+ ${a.warnings.map(w=>`<div class="warn">! ${esc(w)}</div>`).join('')}${a.error?`<div class="warn">Last attempt: ${esc(a.error)}</div>`:''}
+ <input class="subj" value="${esc(a.subject)}"><textarea>${esc(a.body)}</textarea>
+ <div class="row"><button class="p" data-a="approve">Approve &amp; send</button><button data-a="save">Save edits</button><button class="d" data-a="reject">Discard</button><span class="mut">CV PDF is attached automatically.</span></div></div>`).join('')||'<p class="mut">No drafts waiting.</p>'}
+async function runs(){const r=await api('/runs');$('#runrows').innerHTML=r.map(x=>`<tr><td>${esc(x.label)}</td><td>${esc(x.at.replace('T',' ').slice(0,16))}</td><td class="mut">${esc(JSON.stringify(x.stats))}</td><td class="warn">${esc((x.errors||[]).join(' | '))}</td></tr>`).join('')}
+async function refresh(){await Promise.all([overview(),jobs(),drafts(),runs()])}
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.t){document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));['jobs','approve','runs'].forEach(t=>$('#t-'+t).hidden=t!==b.dataset.t);return}
+ const card=b.closest('.draft');if(card){const id=card.dataset.id,a=b.dataset.a;
+  try{if(a==='save'||a==='approve'){await api('/applications/'+id,{method:'PUT',body:JSON.stringify({subject:card.querySelector('.subj').value,body:card.querySelector('textarea').value})})}
+   if(a==='approve'){const r=await api('/applications/'+id+'/approve',{method:'POST'});alert(r.sent?'Sent: '+r.message:'Approved but not sent: '+r.message)}
+   if(a==='reject')await api('/applications/'+id+'/reject',{method:'POST'});await refresh()}catch(x){alert(x.message)}}});
+$('#modeBtn').onclick=async()=>{try{await api('/mode',{method:'POST',body:JSON.stringify({mode:OV.mode==='auto'?'approval':'auto'})});refresh()}catch(x){alert(x.message)}};
+$('#pauseBtn').onclick=async()=>{await api('/pause/'+(OV.paused?0:1),{method:'POST'});refresh()};
+$('#runBtn').onclick=async()=>{$('#runBtn').disabled=true;$('#runBtn').textContent='Running...';try{await api('/run',{method:'POST'})}catch(x){alert(x.message)}$('#runBtn').disabled=false;$('#runBtn').textContent='Run search now';refresh()};
+['q','fcat','floc','fsal','fstatus','frej'].forEach(i=>$('#'+i).addEventListener('input',jobs));
+refresh();setInterval(overview,60000);
+</script></body></html>

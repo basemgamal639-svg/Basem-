@@ -1,0 +1,61 @@
+timezone: America/Toronto
+schedule:
+  search_times: ["08:00", "13:00", "18:00"]
+  report_time: "19:00"
+  reply_sync_every_hours: 2
+
+search:
+  max_age_days: 7
+  # Adzuna/JSearch accept a centre + radius; two anchors cover the whole GTA incl. Oakville/Burlington.
+  anchors:
+    - {where: "Toronto, ON", radius_km: 45}
+    - {where: "Oakville, ON", radius_km: 30}
+  titles:
+    restaurant_management:
+      - Restaurant Manager
+      - Assistant Restaurant Manager
+      - Restaurant General Manager
+      - Assistant General Manager
+      - Food & Beverage Manager
+      - Restaurant Operations Manager
+      - Hospitality Manager
+      - Kitchen Manager
+      - Food Service Manager
+    administrative:
+      - Administrative Assistant
+      - Office Administrator
+      - Office Coordinator
+      - Operations Assistant
+      - Operations Coordinator
+      - Administrative Coordinator
+      - Receptionist
+      - Customer Service Administrator
+      - Data Entry Clerk
+      - Business Support Assistant
+  sources:
+    adzuna:       {enabled: true, max_queries_per_run: 40}
+    jsearch:      {enabled: true, max_queries_per_run: 6}   # RapidAPI free tier is small; keep low
+    career_pages: {enabled: true, pages: []}   # [{company: "Acme Grill", url: "https://acme.example/careers"}]
+
+# Cities that count as "Toronto and nearby". Anything else is rejected on location.
+locations: [Toronto, North York, Scarborough, Mississauga, Brampton, Vaughan, Markham, Richmond Hill, Etobicoke,
+  Oakville, Burlington, York, East York, Woodbridge, Concord, Thornhill, Maple, Pickering, Ajax, Whitby, Oshawa,
+  Newmarket, Aurora, Milton, Stouffville, Caledon, Halton Hills, King City, Georgetown, Bolton, Greater Toronto Area, GTA]
+
+matching:
+  min_score_to_apply: 75
+  min_score_to_keep: 60          # 60-74 is saved as "maybe", never emailed automatically
+  min_hourly: 18.0               # soft: lowers salary score
+  min_annual: 38000
+  weights: {experience: 0.25, responsibilities: 0.20, qualifications: 0.20, language: 0.10, salary: 0.10, location: 0.10, growth: 0.05}
+  # Rejected when stated as REQUIRED (not "asset"/"preferred"/"willing to obtain") and not listed in profile.yaml
+  certs_i_lack: [smart serve, food handler, red seal, food safety certif, safefood, first aid, cpa, bachelor, university degree, college diploma, post-secondary]
+
+email:
+  daily_send_cap: 15            # protects Gmail reputation; Gmail's hard limit is far higher
+  send_delay_seconds: [45, 120] # random pause between sends
+  followup_after_business_days: 4
+  max_followups: 1
+  allow_multiple_per_company: false
+  auto_min_contact_confidence: high    # auto mode only sends to HIGH-confidence contacts
+  unlock_auto_after_real_sends: 5      # must approve+send this many manually first

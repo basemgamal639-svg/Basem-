@@ -1,0 +1,87 @@
+# SOURCE OF TRUTH for every email and every match score. Derived only from Basem_Gamal.pdf.
+# If it is not here, the system will not claim it. Edit with care; items marked CONFIRM need your decision.
+name: Basem Gamal
+email: basemgamal639@gmail.com
+phone: "(514) 803-5883"
+linkedin: linkedin.com/in/basem-gamal-86a2b41bb
+cv_path: cv/Basem_Gamal.pdf
+current_city: Montreal, Quebec        # as on CV
+
+# CONFIRM: sentence used in emails to explain Toronto-area applications (e.g. "I am relocating to the
+# Greater Toronto Area in January and available to start immediately after."). Left empty = nothing is claimed,
+# and emails will not mention relocation at all. Applications are blocked from auto-send while this is empty.
+relocation_sentence: ""
+work_authorization_sentence: ""       # CONFIRM: e.g. "I am legally entitled to work in Canada." Empty = not mentioned.
+
+languages: {english: "working proficiency (preferred working language)", french: "intermediate"}
+
+# Years are derived from CV dates and your "about 4 years" statement. Used to REJECT jobs that demand more.
+experience_years:
+  restaurant_total: 4
+  kitchen_cooking: 2
+  customer_service: 1
+  training_others: 0.5      # assisted in training new employees (Nutrivilla)
+  administrative: 0         # no office/admin role on CV
+  management: 0             # no management title on CV - never claimed
+certifications: []          # CV lists none. Add e.g. "Food Handler Certificate" ONLY if you hold it.
+education: []               # CV lists none.
+
+roles:
+  - title: Chef de Partie
+    company: Le Jardin de Panos
+    dates: Oct 2026 - Present
+    facts: ["Supports daily kitchen operations and coordinates station tasks during service",
+            "Prepares mise en place and executes dishes to kitchen standards",
+            "Maintains food quality, presentation, cleanliness and safe food handling",
+            "Communicates with the kitchen team for smooth service and timely ticket execution"]
+  - title: Line Cook (Seasonal)
+    company: "Hotel Place d'Armes, Corner Collection"
+    dates: Jun 2026 - Oct 2026
+    facts: ["Worked mise en place, plating and pass coordination in a demanding seasonal hotel kitchen",
+            "Adapted to short-staffed, high-pressure service and covered different kitchen tasks",
+            "Collaborated with chefs and front-of-house staff"]
+  - title: Grill Cook / Kitchen Staff
+    company: Groupe Poulet Rouge
+    dates: Aug 2024 - Jun 2026
+    facts: ["Operated the grill station in high-volume service following recipes and standards",
+            "Maintained consistency, food safety and cleanliness"]
+  - title: Operations Associate
+    company: Nutrivilla Foods
+    dates: Nov 2023 - Aug 2024
+    facts: ["Assisted in training new employees on safety procedures and operational processes",
+            "Documented production data accurately for reporting and tracking",
+            "Met production deadlines and daily output goals",
+            "Worked with the team to improve workflow efficiency"]
+  - title: Crew Member
+    company: McDonald's
+    dates: Aug 2023 - Nov 2023
+    facts: ["Helped coordinate task assignments and keep workflow smooth during peak periods",
+            "Contributed to consistent customer service in a high-volume environment"]
+  - title: Crew Member
+    company: Cafe Metajoy (Egypt)
+    dates: Oct 2022 - Oct 2023
+    facts: ["Supported daily cafe operations and customer service"]
+
+# Reusable, CV-true highlights per email type (the ONLY factual claims emails may make).
+highlights:
+  restaurant_manager:
+    - "about four years of hands-on restaurant and kitchen experience, most recently as Chef de Partie at Le Jardin de Panos, where I coordinate station tasks during service"
+    - "experience in high-volume grill, hotel and restaurant kitchens, with a focus on food safety, quality and timely service"
+    - "experience training new team members on safety and operational procedures (Nutrivilla Foods)"
+  assistant_manager:
+    - "about four years of restaurant and kitchen experience, currently as Chef de Partie, coordinating station tasks and communicating with the team to keep service on time"
+    - "experience helping coordinate task assignments during peak periods and training new employees on procedures"
+    - "a reliable, quick-learning approach and strong communication with both kitchen and front-of-house colleagues"
+  admin_assistant:
+    - "accurate documentation of production data for reporting and tracking (Nutrivilla Foods)"
+    - "customer-facing experience in high-volume cafe and restaurant settings"
+    - "strong organization and time management from fast-paced operational roles"
+  office_operations:
+    - "operations experience supporting production deadlines, daily output goals and workflow improvements (Nutrivilla Foods)"
+    - "experience training new employees on processes and documenting operational data"
+    - "years of coordinating tasks in high-volume, deadline-driven restaurant environments"
+
+# Phrases the email writer is NOT allowed to produce (guard against invented credentials).
+forbidden_claims: ["degree", "bachelor", "master", "mba", "diploma", "certified", "certification", "licensed",
+                   "years of management", "managed a team", "managed staff", "led a team", "supervised a team",
+                   "years of administrative", "red seal", "smart serve", "food handler certificate"]

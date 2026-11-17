@@ -1,0 +1,8 @@
+.env
+token.json
+credentials.json
+data/
+outbox/
+cv/*.pdf
+__pycache__/
+.pytest_cache/
