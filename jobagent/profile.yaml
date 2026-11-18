@@ -4,26 +4,27 @@ name: Basem Gamal
 email: basemgamal639@gmail.com
 phone: "(514) 803-5883"
 linkedin: linkedin.com/in/basem-gamal-86a2b41bb
-cv_path: cv/Basem_Gamal.pdf
+cv_path: cv/Basem_Gamal_Assistant_Manager_CV.pdf   # active CV (replaces the earlier chef-focused version)
 current_city: Montreal, Quebec        # as on CV
 
 # CONFIRM: sentence used in emails to explain Toronto-area applications (e.g. "I am relocating to the
 # Greater Toronto Area in January and available to start immediately after."). Left empty = nothing is claimed,
 # and emails will not mention relocation at all. Applications are blocked from auto-send while this is empty.
 relocation_sentence: ""
-work_authorization_sentence: ""       # CONFIRM: e.g. "I am legally entitled to work in Canada." Empty = not mentioned.
+work_authorization_sentence: "I am a Canadian citizen."   # stated on the Assistant Manager CV
 
-languages: {english: "working proficiency (preferred working language)", french: "intermediate"}
+languages: {english: "fluent", french: "intermediate"}
 
 # Years are derived from CV dates and your "about 4 years" statement. Used to REJECT jobs that demand more.
 experience_years:
   restaurant_total: 4
   kitchen_cooking: 2
   customer_service: 1
-  training_others: 0.5      # assisted in training new employees (Nutrivilla)
+  training_others: 0.5      # trained new employees (Nutrivilla)
+  team_leadership: 0.25     # Team Leader at McDonald's, Aug-Nov 2023 (per Assistant Manager CV)
   administrative: 0         # no office/admin role on CV
   management: 0             # no management title on CV - never claimed
-certifications: []          # CV lists none. Add e.g. "Food Handler Certificate" ONLY if you hold it.
+certifications: []          # CV lists none (LinkedIn Learning courses are not certifications). Add e.g. "Food Handler Certificate" ONLY if you hold it.
 education: []               # CV lists none.
 
 roles:
@@ -52,11 +53,11 @@ roles:
             "Documented production data accurately for reporting and tracking",
             "Met production deadlines and daily output goals",
             "Worked with the team to improve workflow efficiency"]
-  - title: Crew Member
+  - title: Team Leader
     company: McDonald's
     dates: Aug 2023 - Nov 2023
-    facts: ["Helped coordinate task assignments and keep workflow smooth during peak periods",
-            "Contributed to consistent customer service in a high-volume environment"]
+    facts: ["Coordinated staff task assignments to meet service and performance targets during peak periods",
+            "Supported daily operations in a high-volume environment while keeping composure under pressure"]
   - title: Crew Member
     company: Cafe Metajoy (Egypt)
     dates: Oct 2022 - Oct 2023
@@ -70,7 +71,7 @@ highlights:
     - "experience training new team members on safety and operational procedures (Nutrivilla Foods)"
   assistant_manager:
     - "about four years of restaurant and kitchen experience, currently as Chef de Partie, coordinating station tasks and communicating with the team to keep service on time"
-    - "experience helping coordinate task assignments during peak periods and training new employees on procedures"
+    - "experience as a Team Leader at McDonald's coordinating staff task assignments during peak periods, and training new employees on safety and operational procedures"
     - "a reliable, quick-learning approach and strong communication with both kitchen and front-of-house colleagues"
   admin_assistant:
     - "accurate documentation of production data for reporting and tracking (Nutrivilla Foods)"
@@ -79,7 +80,7 @@ highlights:
   office_operations:
     - "operations experience supporting production deadlines, daily output goals and workflow improvements (Nutrivilla Foods)"
     - "experience training new employees on processes and documenting operational data"
-    - "years of coordinating tasks in high-volume, deadline-driven restaurant environments"
+    - "experience coordinating staff tasks in high-volume, deadline-driven restaurant environments"
 
 # Phrases the email writer is NOT allowed to produce (guard against invented credentials).
 forbidden_claims: ["degree", "bachelor", "master", "mba", "diploma", "certified", "certification", "licensed",

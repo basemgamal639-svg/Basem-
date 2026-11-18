@@ -151,7 +151,7 @@ def test_approval_mode_sends_nothing_until_approved(ctx):
     with ctx.session() as s:
         aid = s.scalar(select(Application.id))
     ok, why = pipeline.send_application(ctx, aid, manual=True)
-    assert ok and len(ctx.mailer.sent) == 1 and ctx.mailer.sent[0]["attachment"].name == "Basem_Gamal.pdf"
+    assert ok and len(ctx.mailer.sent) == 1 and ctx.mailer.sent[0]["attachment"].name == "Basem_Gamal_Assistant_Manager_CV.pdf"
     assert jobs(ctx)["Assistant Restaurant Manager|Good Grill Inc."][0] == "applied"
 
 
